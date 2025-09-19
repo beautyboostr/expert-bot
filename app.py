@@ -17,7 +17,6 @@ except (AttributeError, KeyError):
         st.error("API Key not found. Please set your GEMINI_API_KEY in Streamlit secrets or as an environment variable.", icon="🚨")
         st.stop()
 
-
 # --- 2. HELPER FUNCTIONS ---
 
 @st.cache_data
@@ -28,16 +27,14 @@ def load_data():
         problem_rec_df = pd.read_csv('problem_recommendations_final.csv')
         return recommendations_df, problem_rec_df
     except FileNotFoundError as e:
-        st.error(f"Error: A required data file was not found: `{e.filename}`. Please make sure all CSV files are in the same folder as the app.", icon="🚨")
+        st.error(f"Error: A required data file was not found: `{e.filename}`.", icon="🚨")
         return None, None
 
 def find_problem_recommendation(user_problem_text, recommendations_df):
     """Scans user text for keywords to find the correct client audience."""
-    if not user_problem_text or not isinstance(user_problem_text, str):
-        return None
+    if not user_problem_text or not isinstance(user_problem_text, str): return None
     for _, row in recommendations_df.iterrows():
-        if row['problem_keyword'].lower() in user_problem_text.lower():
-            return row
+        if row['problem_keyword'].lower() in user_problem_text.lower(): return row
     return None
 
 def generate_content(prompt):
@@ -50,6 +47,14 @@ def generate_content(prompt):
         st.error(f"An error occurred while contacting the AI model: {e}", icon="🔥")
         return None
 
+# Initialize session state to manage the multi-step form
+if 'stage' not in st.session_state:
+    st.session_state.stage = 0
+if 'form_data' not in st.session_state:
+    st.session_state.form_data = {}
+
+def set_stage(stage):
+    st.session_state.stage = stage
 
 # --- 3. MAIN APPLICATION UI ---
 
@@ -59,121 +64,139 @@ if load_data_result:
 else:
     st.stop()
 
-with st.container(border=True):
+# STAGE 0: Initial Profile Form
+if st.session_state.stage == 0:
     st.title("🎓 Welcome to the Program Advisor!")
-    st.info(
-        "**Hello!** This bot is designed to help you structure and define your next educational program. "
-        "In just a few minutes, you'll have a complete blueprint for your next course or lesson.",
-        icon="👋"
-    )
+    st.info("**Hello!** This bot will help you design your next educational program.", icon="👋")
 
-with st.form("expert_form"):
-    st.header("Step 1: Your Profile", divider="rainbow")
-    q1_options = ["Dermatologist", "Facialist", "Esthetician", "Skincare Coach", "Skincare Influencer", "Other"]
-    q2_options = ["Educational content", "Hands-on techniques", "A combination of both"]
-    q3_options = ["1-2 hours", "3-4 hours a week", "8-10 hours a week"]
+    with st.form("expert_form_1"):
+        st.header("Step 1: Your Profile", divider="rainbow")
+        q1_options = ["Dermatologist", "Facialist", "Esthetician", "Skincare Coach", "Skincare Influencer", "Other"]
+        q2_options = ["Educational content", "Hands-on techniques", "A combination of both"]
+        q3_options = ["1-2 hours", "3-4 hours a week", "8-10 hours a week"]
 
-    answer1 = st.selectbox("Which of the following best describes your professional role?", q1_options, index=None, placeholder="Select your role...")
-    answer2 = st.radio("What is your primary method for treating clients?", q2_options, index=1)
-    answer3 = st.select_slider("How many hours a week can you spare for content creation?", q3_options, value="3-4 hours a week")
+        answer1 = st.selectbox("Which of the following best describes your professional role?", q1_options, index=None, placeholder="Select your role...")
+        answer2 = st.radio("What is your primary method for treating clients?", q2_options, index=1)
+        answer3 = st.select_slider("How many hours a week can you spare?", q3_options, value="3-4 hours a week")
 
-    st.header("Step 2: Your Program Focus", divider="rainbow")
-    answer4 = st.text_area("Describe the main problem you solve for your clients.", placeholder="Example: I help clients get rid of persistent acne.")
-    answer5 = st.text_input("In one sentence, describe your main expertise.", placeholder="Example: I specialize in holistic solutions for aging skin.")
+        st.header("Step 2: Your Program Focus", divider="rainbow")
+        answer4 = st.text_area("Describe the main problem you solve for your clients.", placeholder="Example: I help clients get rid of persistent acne.")
+        answer5 = st.text_input("In one sentence, describe your main expertise.", placeholder="Example: I specialize in holistic solutions for aging skin.")
 
-    submitted = st.form_submit_button("Generate My Program Blueprint", use_container_width=True)
+        submitted = st.form_submit_button("Next Step", use_container_width=True)
+        if submitted:
+            st.session_state.form_data.update({
+                "role": answer1, "method": answer2, "time": answer3,
+                "problem": answer4, "expertise": answer5
+            })
+            if answer3 == "3-4 hours a week":
+                set_stage(1) # Go to decision stage
+            elif answer3 == "8-10 hours a week":
+                set_stage(2) # Go directly to deep dive
+            else:
+                set_stage(3) # Go directly to blueprint for single lesson
+            st.rerun()
 
-if submitted:
-    st.header("🚀 Your Program Blueprint", divider="rainbow")
+# STAGE 1: Decision Point for 3-4 Hour Users
+if st.session_state.stage == 1:
+    st.header("Step 3: What is Your Goal Right Now?", divider="rainbow")
+    st.write("With 3-4 hours per week, you have two great options. What would you like to focus on now?")
     
-    # --- 4. DYNAMIC RECOMMENDATION GENERATION ---
-    with st.spinner("Analyzing your profile to generate custom recommendations..."):
-        # ** NEW LOGIC: Generate the content focus dynamically **
-        recommendation_prompt = f"""
-        Based on the following expert profile, generate a single, concise "Recommended Content Focus" for their program or lesson. The recommendation should be one sentence and synthesize their problem and expertise.
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Create a Single Lesson", use_container_width=True, type="primary"):
+            st.session_state.form_data['goal'] = 'single_lesson'
+            set_stage(3)
+            st.rerun()
+    with col2:
+        if st.button("Outline a Full 12-Lesson Program", use_container_width=True):
+            st.session_state.form_data['goal'] = 'full_program'
+            set_stage(2) # Go to deep dive
+            st.rerun()
 
-        - **Client Problem:** "{answer4}"
-        - **Expertise:** "{answer5}"
+# STAGE 2: Deep Dive for Full Program Outline
+if st.session_state.stage == 2:
+    st.header("Step 3: Define Your Program's Transformation", divider="rainbow")
+    st.info("To create a great program outline, we need to understand the journey you provide.", icon="🗺️")
+    with st.form("expert_form_2"):
+        point_a = st.text_area("Client's Starting Point (Point A)", placeholder="Example: My client has painful, inflamed cystic acne and feels hopeless.")
+        point_b = st.text_area("Client's Transformation (Point B)", placeholder="Example: My client will have calm, clear skin and feel confident and in control.")
+        method_desc = st.text_area("Your Unique Method", placeholder="Example: My method involves three phases: 1. Calming inflammation with gentle techniques. 2. Rebuilding the skin barrier. 3. Creating a long-term maintenance plan.")
+        
+        submitted = st.form_submit_button("Generate My Program Blueprint", use_container_width=True, type="primary")
+        if submitted:
+            st.session_state.form_data.update({
+                "point_a": point_a, "point_b": point_b, "method_desc": method_desc
+            })
+            st.session_state.form_data['goal'] = 'full_program' # Ensure goal is set
+            set_stage(3) # Go to final blueprint
+            st.rerun()
 
-        Generate the "Recommended Content Focus" only.
-        """
-        recommended_content_focus = generate_content(recommendation_prompt)
+# STAGE 3: Final Blueprint Generation
+if st.session_state.stage == 3:
+    st.header("🚀 Your Program Blueprint", divider="rainbow")
+    data = st.session_state.form_data
+    problem_specific_rec = find_problem_recommendation(data.get('problem', ''), problem_rec_df)
 
     with st.container(border=True):
         st.subheader("Key Recommendations:")
-        time_based_rec = recommendations_df[recommendations_df['condition_time'] == answer3]
+        time_based_rec = recommendations_df[recommendations_df['condition_time'] == data.get('time')]
         if not time_based_rec.empty:
             st.success(time_based_rec['recommendation_text'].iloc[0], icon="🕒")
 
-        # Display the newly generated content focus
-        if recommended_content_focus:
-            st.info(f"**Recommended Content Focus:** {recommended_content_focus.strip()}", icon="💡")
-        
-        # Find and display the client audience from the CSV
-        problem_specific_rec = find_problem_recommendation(answer4, problem_rec_df)
-        if problem_specific_rec is not None and 'client_target_audience' in problem_specific_rec and pd.notna(problem_specific_rec['client_target_audience']):
-            st.info(f"**Ideal Client Target Audience:** {problem_specific_rec['client_target_audience']}", icon="👥")
+        if problem_specific_rec is not None:
+            # Logic to show the right content focus
+            if data.get('goal') == 'full_program' or data.get('time') == '8-10 hours a week':
+                st.info(f"**Recommended Content Type:** {problem_specific_rec['recommended_program']}", icon="💡")
+            else:
+                st.info(f"**Recommended Content Type:** {problem_specific_rec['recommended_content']}", icon="💡")
+            
+            if 'client_target_audience' in problem_specific_rec and pd.notna(problem_specific_rec['client_target_audience']):
+                st.info(f"**Ideal Client Target Audience:** {problem_specific_rec['client_target_audience']}", icon="👥")
 
     st.header("✨ Your AI-Generated Creative Content", divider="rainbow")
-    with st.spinner("Our creative AI is brainstorming your program content... This may take a moment."):
-        # --- ADAPTIVE PROMPT GENERATION (from previous step, still excellent) ---
+    with st.spinner("Our creative AI is brainstorming for you... This may take a moment."):
         prompt_for_gemini = ""
         base_prompt_info = f"""
         **Expert's Information:**
-        * Professional Role: {answer1}
-        * Primary Method: {answer2}
-        * Main Problem They Solve: "{answer4}"
-        * Main Expertise: "{answer5}"
+        * Role: {data.get('role')} | Method: {data.get('method')}
+        * Client Problem: "{data.get('problem')}" | Expertise: "{data.get('expertise')}"
         """
 
-        if answer3 == "1-2 hours":
+        # Generate prompt for single lesson
+        if data.get('goal') == 'single_lesson' or data.get('time') == '1-2 hours':
             prompt_for_gemini = f"""
-            You are an expert instructional designer. Your task is to generate creative ideas for a SINGLE, FOCUSED ADDITIONAL LESSON based on the expert's information.
-
+            You are an expert instructional designer. Generate creative ideas for a SINGLE, FOCUSED ADDITIONAL LESSON based on the expert's information.
             {base_prompt_info}
+            **Your Tasks:**
+            1.  **Write a Lesson Description:** Create a short, engaging description (3-4 sentences).
+            2.  **Generate Title and Tagline Ideas:** Generate 4 creative titles for this single lesson, each with a compelling one-sentence tagline.
+            Format the output using Markdown.
+            """
+        # Generate prompt for full program
+        elif data.get('goal') == 'full_program':
+            prompt_for_gemini = f"""
+            You are an expert instructional designer. Your task is to create a detailed outline for a FULL 12-LESSON MONTHLY PROGRAM based on the expert's transformation method.
+            {base_prompt_info}
+            **Expert's Transformation Method:**
+            * **Starting Point (A):** {data.get('point_a')}
+            * **Ending Result (B):** {data.get('point_b')}
+            * **Method Description:** {data.get('method_desc')}
 
             **Your Tasks:**
-            1.  **Write a Lesson Description:** Create a short, engaging description (3-4 sentences) for this single lesson.
-            2.  **Generate Title and Tagline Ideas:** Generate 4 creative and engaging titles for this single lesson. For each title, provide a compelling one-sentence tagline.
-
-            The tone must be professional and empowering. Format the output using Markdown.
-            """
-        elif answer3 == "8-10 hours a week":
-            prompt_for_gemini = f"""
-            You are an expert instructional designer. Your task is to generate creative ideas for a FULL 12-LESSON MONTHLY PROGRAM based on the expert's information.
-
-            {base_prompt_info}
-
-            **Your Tasks:**
-            1.  **Write a Full Program Description:** Create an engaging description (3-4 sentences) for the complete 12-lesson program.
-            2.  **Generate Title and Tagline Ideas:** Generate 4 creative and engaging titles for the full program. For each title, provide a compelling one-sentence tagline.
-
-            The tone must be professional and empowering. Format the output using Markdown.
-            """
-        else: # This covers "3-4 hours a week"
-            prompt_for_gemini = f"""
-            You are an expert instructional designer. The expert has time to create one lesson now and plan a full program for later. Perform the following TWO tasks.
-
-            {base_prompt_info}
-
-            ---
-            ### **Task 1: Creative Ideas for the Single Additional Lesson**
-            Generate creative content for the SINGLE lesson the expert will create now.
-            * **Lesson Description:** Write a short, engaging description (3-4 sentences).
-            * **Title and Tagline Ideas:** Generate 4 creative titles for this single lesson, each with a compelling one-sentence tagline.
-
-            ---
-            ### **Task 2: Outline for the Full 12-Lesson Program**
-            Now, provide a high-level topic outline for the full 12-lesson program the expert will build in the future. List 12 lesson titles that logically progress from basics to advanced topics.
-            * **Example Format:**
-                * Week 1: Understanding the Root Causes of...
-                * Week 2: The Essential Daily Ritual for...
-                * ...and so on for 12 weeks.
-
-            The tone must be professional and empowering. Format the entire output using Markdown with clear headings for each task.
+            1.  **Write a Full Program Description:** Write an engaging description (3-4 sentences) for the program.
+            2.  **Generate Title and Tagline Ideas:** Generate 4 creative titles for the full program, each with a tagline.
+            3.  **Create a 12-Week Lesson Outline:** Based on the expert's A->B method, create a logical, week-by-week lesson plan. Each week should have a clear title and a one-sentence description of what the client will learn.
+            
+            Format the entire output using Markdown with clear headings.
             """
 
         creative_content = generate_content(prompt_for_gemini)
         if creative_content:
             with st.container(border=True):
                 st.markdown(creative_content)
+
+    if st.button("Start Over", use_container_width=True):
+        st.session_state.stage = 0
+        st.session_state.form_data = {}
+        st.rerun()

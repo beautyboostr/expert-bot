@@ -7,6 +7,9 @@ import os
 
 st.set_page_config(page_title="Expert Program Advisor Bot", layout="centered")
 
+# ** ADD YOUR LOGO HERE **
+st.image("logo.png", width=100)
+
 # Configure the Gemini API key securely
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
@@ -85,7 +88,6 @@ if st.session_state.stage == 0:
 
         submitted = st.form_submit_button("Next Step", use_container_width=True)
         if submitted:
-            # ** NEW VALIDATION LOGIC **
             if not all([answer1, answer4, answer5]):
                 st.error("⚠️ Please fill in all required fields before proceeding.")
             else:
@@ -129,7 +131,6 @@ if st.session_state.stage == 2:
         
         submitted = st.form_submit_button("Generate My Program Blueprint", use_container_width=True, type="primary")
         if submitted:
-            # ** NEW VALIDATION LOGIC **
             if not all([point_a, point_b, method_desc]):
                 st.error("⚠️ Please describe your client's transformation journey to continue.")
             else:

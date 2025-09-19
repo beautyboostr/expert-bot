@@ -77,7 +77,9 @@ if st.session_state.stage == 0:
 
         answer1 = st.selectbox("Which of the following best describes your professional role?", q1_options, index=None, placeholder="Select your role...")
         answer2 = st.radio("What is your primary method for treating clients?", q2_options, index=1)
-        answer3 = st.select_slider("How many hours a week can you spare?", q3_options, value="3-4 hours a week")
+        
+        # ** UI/UX IMPROVEMENT IS HERE **
+        answer3 = st.radio("How many hours a week can you spare?", q3_options, index=1)
 
         st.header("Step 2: Your Program Focus", divider="rainbow")
         answer4 = st.text_area("Describe the main problem you solve for your clients.", placeholder="Example: I help clients get rid of persistent acne.")

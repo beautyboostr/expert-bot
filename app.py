@@ -69,7 +69,10 @@ else:
 # STAGE 0: Initial Profile Form
 if st.session_state.stage == 0:
     st.title("Unlock Your Next Bestselling Skincare Program")
-    st.info("**Hello!** Welcome, Skincare Expert! Ready to transform your unique expertise into a powerful, structured online program? In just a few minutes, this advisor will guide you from a brilliant idea to a complete blueprint, ready for creation. Let's build something amazing together.", icon="👋")
+    st.info("**Welcome, Skincare Expert!** Ready to transform your unique expertise into a powerful, structured online program? "
+    "In just a few minutes, this advisor will guide you from a brilliant idea to a complete blueprint, ready for creation. "
+    "Let's build something amazing together.", 
+    icon="✨")
 
     with st.form("expert_form_1"):
         st.header("👤 Step 1: Your Profile", divider="gray")

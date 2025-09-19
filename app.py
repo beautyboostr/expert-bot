@@ -129,7 +129,7 @@ if st.session_state.stage == 2:
                 "point_a": point_a, "point_b": point_b, "method_desc": method_desc
             })
             if st.session_state.form_data.get('time') == '3-4 hours a week':
-                st.session_state.form_data['goal'] = 'combo' # ** NEW GOAL FOR THE COMBO OUTPUT **
+                st.session_state.form_data['goal'] = 'combo'
             else:
                 st.session_state.form_data['goal'] = 'full_program'
             set_stage(3) # Go to final blueprint
@@ -148,7 +148,6 @@ if st.session_state.stage == 3:
             st.success(time_based_rec['recommendation_text'].iloc[0], icon="🕒")
 
         if problem_specific_rec is not None:
-            # Logic to show the right content focus
             if data.get('goal') in ['full_program', 'combo'] or data.get('time') == '8-10 hours a week':
                 st.info(f"**Recommended Content Type (for Full Program):** {problem_specific_rec['recommended_program']}", icon="💡")
             else:
@@ -166,15 +165,25 @@ if st.session_state.stage == 3:
         * Client Problem: "{data.get('problem')}" | Expertise: "{data.get('expertise')}"
         """
         
-        # PROMPT FOR SINGLE LESSON
-        single_lesson_prompt = f"""
-        You are an expert instructional designer. Generate creative ideas for a SINGLE, FOCUSED ADDITIONAL LESSON based on the expert's information.
-        {base_prompt_info}
-        **Your Tasks:**
-        1.  **Write a Lesson Description:** Create a short, engaging description (3-4 sentences).
-        2.  **Generate Title and Tagline Ideas:** Generate 4 creative titles for this single lesson, each with a compelling one-sentence tagline.
-        Format the output using Markdown.
-        """
+        # PROMPTS FOR SINGLE LESSONS
+        if data.get('method') == 'Educational content':
+            single_lesson_prompt = f"""
+            You are an expert curriculum designer. Your task is to brainstorm 4-5 specific, actionable ideas for a SINGLE EDUCATIONAL LESSON based on the expert's profile.
+            {base_prompt_info}
+            **Your Tasks:**
+            1.  **State Lesson Length:** Start by recommending the ideal lesson length is **5-12 minutes**.
+            2.  **Generate 4-5 Concrete Lesson Ideas:** For each idea, provide a clear title and a 1-2 sentence description of what the client will learn and do. These ideas must be highly specific and based on the expert's problem and expertise.
+            Format the output using Markdown with a clear heading for the lesson ideas.
+            """
+        else: # For "Hands-on techniques"
+            single_lesson_prompt = f"""
+            You are an expert instructional designer. Generate creative marketing content for a SINGLE, HANDS-ON LESSON (e.g., face massage, yoga) based on the expert's information.
+            {base_prompt_info}
+            **Your Tasks:**
+            1.  **Write a Lesson Description:** Create a short, engaging description (3-4 sentences) that focuses on the physical practice and its benefits.
+            2.  **Generate Title and Tagline Ideas:** Generate 4 creative titles for this single lesson, each with a compelling, benefit-driven tagline.
+            Format the output using Markdown.
+            """
 
         # PROMPT FOR FULL PROGRAM
         full_program_prompt = f"""
@@ -194,7 +203,7 @@ if st.session_state.stage == 3:
         Format the entire output using Markdown with clear headings.
         """
 
-        # ** NEW LOGIC TO HANDLE ALL CASES **
+        # LOGIC TO HANDLE ALL CASES
         if data.get('goal') == 'single_lesson' or data.get('time') == '1-2 hours':
             st.markdown("### Part 1: Your Single Lesson Content")
             creative_content = generate_content(single_lesson_prompt)
@@ -223,6 +232,11 @@ if st.session_state.stage == 3:
             if full_program_content:
                 with st.container(border=True):
                     st.markdown(full_program_content)
+
+    if st.button("Start Over", use_container_width=True):
+        st.session_state.stage = 0
+        st.session_state.form_data = {}
+        st.rerun()                    st.markdown(full_program_content)
 
 
     if st.button("Start Over", use_container_width=True):

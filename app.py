@@ -5,10 +5,10 @@ import os
 
 # --- 1. SETUP AND CONFIGURATION ---
 
-st.set_page_config(page_title="Expert Program Advisor Bot", layout="centered")
+st.set_page_config(page_title="beautyBoostr Expert Program Advisor Bot", layout="centered")
 
 # ** ADD YOUR LOGO HERE **
-st.image("logo.png", width=100)
+st.image("logo.png", width=300)
 
 # Configure the Gemini API key securely
 try:
@@ -69,8 +69,8 @@ else:
 
 # STAGE 0: Initial Profile Form
 if st.session_state.stage == 0:
-    st.title("🎓 Welcome to the Program Advisor!")
-    st.info("**Hello!** This bot will help you design your next educational program.", icon="👋")
+    st.title("🎓 Welcome to the BeautyBoostr Program Advisor!")
+    st.info("**Hello!** This bot will help you design your next skincare program that your client really need.", icon="👋")
 
     with st.form("expert_form_1"):
         st.header("Step 1: Your Profile", divider="rainbow")

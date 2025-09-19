@@ -75,7 +75,7 @@ if st.session_state.stage == 0:
     icon="✨")
 
     with st.form("expert_form_1"):
-        st.header("👤 Step 1: Your Profile", divider="gray")
+        st.header("Step 1: Your Profile", divider="gray")
         q1_options = ["Dermatologist", "Facialist", "Esthetician", "Skincare Coach", "Skincare Influencer", "Other"]
         q2_options = ["Educational content", "Hands-on techniques", "A combination of both"]
         q3_options = ["1-2 hours", "3-4 hours a week", "8-10 hours a week"]
@@ -84,7 +84,7 @@ if st.session_state.stage == 0:
         answer2 = st.radio("What is your primary method for treating clients?", q2_options, index=1)
         answer3 = st.radio("How many hours a week can you spare?", q3_options, index=1)
 
-        st.header("🎯 Step 2: Your Program Focus", divider="gray")
+        st.header("Step 2: Your Program Focus", divider="gray")
         answer4 = st.text_area("Describe the main problem you solve for your clients. (Required)", placeholder="Example: I help clients get rid of persistent acne.")
         answer5 = st.text_input("In one sentence, describe your main expertise. (Required)", placeholder="Example: I specialize in holistic solutions for aging skin.")
 

@@ -5,7 +5,7 @@ import os
 
 # --- 1. SETUP AND CONFIGURATION ---
 
-st.set_page_config(page_title="BeautyBoostr Expert Program Advisor Bot", layout="centered")
+st.set_page_config(page_title="Expert Program Advisor Bot", layout="centered")
 
 # Configure the Gemini API key securely
 try:
@@ -58,8 +58,7 @@ def set_stage(stage):
 
 # --- 3. MAIN APPLICATION UI ---
 
-# Add your logo at the top of the app
-st.image("logo.png", width=300)
+st.image("logo.png", width=100)
 
 load_data_result = load_data()
 if load_data_result:
@@ -69,11 +68,11 @@ else:
 
 # STAGE 0: Initial Profile Form
 if st.session_state.stage == 0:
-    st.title("🎓 Welcome to the BeautyBoostr Program Advisor!")
-    st.info("**Hello!** This bot will help you design your next skincare program that your client really need.", icon="👋")
+    st.title("🎓 Welcome to the Program Advisor!")
+    st.info("**Hello!** This bot will help you design your next educational program.", icon="👋")
 
     with st.form("expert_form_1"):
-        st.header("Step 1: Your Profile", divider="rainbow")
+        st.header("👤 Step 1: Your Profile", divider="gray")
         q1_options = ["Dermatologist", "Facialist", "Esthetician", "Skincare Coach", "Skincare Influencer", "Other"]
         q2_options = ["Educational content", "Hands-on techniques", "A combination of both"]
         q3_options = ["1-2 hours", "3-4 hours a week", "8-10 hours a week"]
@@ -82,7 +81,7 @@ if st.session_state.stage == 0:
         answer2 = st.radio("What is your primary method for treating clients?", q2_options, index=1)
         answer3 = st.radio("How many hours a week can you spare?", q3_options, index=1)
 
-        st.header("Step 2: Your Program Focus", divider="rainbow")
+        st.header("🎯 Step 2: Your Program Focus", divider="gray")
         answer4 = st.text_area("Describe the main problem you solve for your clients. (Required)", placeholder="Example: I help clients get rid of persistent acne.")
         answer5 = st.text_input("In one sentence, describe your main expertise. (Required)", placeholder="Example: I specialize in holistic solutions for aging skin.")
 
@@ -105,7 +104,7 @@ if st.session_state.stage == 0:
 
 # STAGE 1: Decision Point for 3-4 Hour Users
 if st.session_state.stage == 1:
-    st.header("Step 3: What is Your Goal Right Now?", divider="rainbow")
+    st.header("🤔 Step 3: What is Your Goal Right Now?", divider="gray")
     st.write("With 3-4 hours per week, you have two great options. What would you like to focus on now?")
     
     col1, col2 = st.columns(2)
@@ -122,8 +121,8 @@ if st.session_state.stage == 1:
 
 # STAGE 2: Deep Dive for Full Program Outline
 if st.session_state.stage == 2:
-    st.header("Step 3: Define Your Program's Transformation", divider="rainbow")
-    st.info("To create a great program outline, we need to understand the journey you provide.", icon="🗺️")
+    st.header("🗺️ Step 3: Define Your Program's Transformation", divider="gray")
+    st.info("To create a great program outline, we need to understand the journey you provide.", icon="✨")
     with st.form("expert_form_2"):
         point_a = st.text_area("Client's Starting Point (Point A) (Required)", placeholder="Example: My client has painful, inflamed cystic acne and feels hopeless.")
         point_b = st.text_area("Client's Transformation (Point B) (Required)", placeholder="Example: My client will have calm, clear skin and feel confident and in control.")
@@ -146,7 +145,7 @@ if st.session_state.stage == 2:
 
 # STAGE 3: Final Blueprint Generation
 if st.session_state.stage == 3:
-    st.header("🚀 Your Program Blueprint", divider="rainbow")
+    st.header("🚀 Your Program Blueprint", divider="gray")
     data = st.session_state.form_data
     problem_specific_rec = find_problem_recommendation(data.get('problem', ''), problem_rec_df)
 
@@ -165,7 +164,7 @@ if st.session_state.stage == 3:
             if 'client_target_audience' in problem_specific_rec and pd.notna(problem_specific_rec['client_target_audience']):
                 st.info(f"**Ideal Client Target Audience:** {problem_specific_rec['client_target_audience']}", icon="👥")
 
-    st.header("✨ Your AI-Generated Creative Content", divider="rainbow")
+    st.header("✨ Your AI-Generated Creative Content", divider="gray")
     with st.spinner("Our creative AI is brainstorming for you... This may take a moment."):
         
         base_prompt_info = f"""

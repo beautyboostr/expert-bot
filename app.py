@@ -59,7 +59,7 @@ def set_stage(stage):
 # --- 3. MAIN APPLICATION UI ---
 
 # Add your logo at the top of the app
-st.image("logo.png", width=100)
+st.image("logo.png", width=300)
 
 load_data_result = load_data()
 if load_data_result:

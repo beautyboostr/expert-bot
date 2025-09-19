@@ -58,6 +58,9 @@ def set_stage(stage):
 
 # --- 3. MAIN APPLICATION UI ---
 
+# Add your logo at the top of the app
+st.image("logo.png", width=100)
+
 load_data_result = load_data()
 if load_data_result:
     recommendations_df, problem_rec_df = load_data_result
@@ -66,44 +69,39 @@ else:
 
 # STAGE 0: Initial Profile Form
 if st.session_state.stage == 0:
-    st.title("🎓 Welcome to the BeutyBoostr Program Advisor!")
-    st.info("**Hello!** This bot will help you design your next skincare program.", icon="👋")
-# --- LEFT COLUMN / QUESTIONNAIRE ---
-with col1:
-    st.image("logo.png", width=100) # <-- ADD THIS LINE
-    st.write("---")
-    
-    load_data_result = load_data()
-    # ... rest of your code in the left column
+    st.title("🎓 Welcome to the Program Advisor!")
+    st.info("**Hello!** This bot will help you design your next educational program.", icon="👋")
+
     with st.form("expert_form_1"):
         st.header("Step 1: Your Profile", divider="rainbow")
         q1_options = ["Dermatologist", "Facialist", "Esthetician", "Skincare Coach", "Skincare Influencer", "Other"]
         q2_options = ["Educational content", "Hands-on techniques", "A combination of both"]
         q3_options = ["1-2 hours", "3-4 hours a week", "8-10 hours a week"]
 
-        answer1 = st.selectbox("Which of the following best describes your professional role?", q1_options, index=None, placeholder="Select your role...")
+        answer1 = st.selectbox("Which of the following best describes your professional role? (Required)", q1_options, index=None, placeholder="Select your role...")
         answer2 = st.radio("What is your primary method for treating clients?", q2_options, index=1)
-        
-        # ** UI/UX IMPROVEMENT IS HERE **
         answer3 = st.radio("How many hours a week can you spare?", q3_options, index=1)
 
         st.header("Step 2: Your Program Focus", divider="rainbow")
-        answer4 = st.text_area("Describe the main problem you solve for your clients.", placeholder="Example: I help clients get rid of persistent acne.")
-        answer5 = st.text_input("In one sentence, describe your main expertise.", placeholder="Example: I specialize in holistic solutions for aging skin.")
+        answer4 = st.text_area("Describe the main problem you solve for your clients. (Required)", placeholder="Example: I help clients get rid of persistent acne.")
+        answer5 = st.text_input("In one sentence, describe your main expertise. (Required)", placeholder="Example: I specialize in holistic solutions for aging skin.")
 
         submitted = st.form_submit_button("Next Step", use_container_width=True)
         if submitted:
-            st.session_state.form_data.update({
-                "role": answer1, "method": answer2, "time": answer3,
-                "problem": answer4, "expertise": answer5
-            })
-            if answer3 == "3-4 hours a week":
-                set_stage(1) # Go to decision stage
-            elif answer3 == "8-10 hours a week":
-                set_stage(2) # Go directly to deep dive
+            if not all([answer1, answer4, answer5]):
+                st.error("⚠️ Please fill in all required fields before proceeding.")
             else:
-                set_stage(3) # Go directly to blueprint for single lesson
-            st.rerun()
+                st.session_state.form_data.update({
+                    "role": answer1, "method": answer2, "time": answer3,
+                    "problem": answer4, "expertise": answer5
+                })
+                if answer3 == "3-4 hours a week":
+                    set_stage(1)
+                elif answer3 == "8-10 hours a week":
+                    set_stage(2)
+                else:
+                    set_stage(3)
+                st.rerun()
 
 # STAGE 1: Decision Point for 3-4 Hour Users
 if st.session_state.stage == 1:
@@ -119,7 +117,7 @@ if st.session_state.stage == 1:
     with col2:
         if st.button("Outline a Full 12-Lesson Program", use_container_width=True):
             st.session_state.form_data['goal'] = 'full_program'
-            set_stage(2) # Go to deep dive
+            set_stage(2)
             st.rerun()
 
 # STAGE 2: Deep Dive for Full Program Outline
@@ -127,21 +125,24 @@ if st.session_state.stage == 2:
     st.header("Step 3: Define Your Program's Transformation", divider="rainbow")
     st.info("To create a great program outline, we need to understand the journey you provide.", icon="🗺️")
     with st.form("expert_form_2"):
-        point_a = st.text_area("Client's Starting Point (Point A)", placeholder="Example: My client has painful, inflamed cystic acne and feels hopeless.")
-        point_b = st.text_area("Client's Transformation (Point B)", placeholder="Example: My client will have calm, clear skin and feel confident and in control.")
-        method_desc = st.text_area("Your Unique Method", placeholder="Example: My method involves three phases: 1. Calming inflammation with gentle techniques. 2. Rebuilding the skin barrier. 3. Creating a long-term maintenance plan.")
+        point_a = st.text_area("Client's Starting Point (Point A) (Required)", placeholder="Example: My client has painful, inflamed cystic acne and feels hopeless.")
+        point_b = st.text_area("Client's Transformation (Point B) (Required)", placeholder="Example: My client will have calm, clear skin and feel confident and in control.")
+        method_desc = st.text_area("Your Unique Method (Required)", placeholder="Example: My method involves three phases: 1. Calming inflammation... 2. Rebuilding the skin barrier...")
         
         submitted = st.form_submit_button("Generate My Program Blueprint", use_container_width=True, type="primary")
         if submitted:
-            st.session_state.form_data.update({
-                "point_a": point_a, "point_b": point_b, "method_desc": method_desc
-            })
-            if st.session_state.form_data.get('time') == '3-4 hours a week':
-                st.session_state.form_data['goal'] = 'combo'
+            if not all([point_a, point_b, method_desc]):
+                st.error("⚠️ Please describe your client's transformation journey to continue.")
             else:
-                st.session_state.form_data['goal'] = 'full_program'
-            set_stage(3) # Go to final blueprint
-            st.rerun()
+                st.session_state.form_data.update({
+                    "point_a": point_a, "point_b": point_b, "method_desc": method_desc
+                })
+                if st.session_state.form_data.get('time') == '3-4 hours a week':
+                    st.session_state.form_data['goal'] = 'combo'
+                else:
+                    st.session_state.form_data['goal'] = 'full_program'
+                set_stage(3)
+                st.rerun()
 
 # STAGE 3: Final Blueprint Generation
 if st.session_state.stage == 3:
@@ -173,17 +174,16 @@ if st.session_state.stage == 3:
         * Client Problem: "{data.get('problem')}" | Expertise: "{data.get('expertise')}"
         """
         
-        # PROMPTS FOR SINGLE LESSONS
         if data.get('method') == 'Educational content':
             single_lesson_prompt = f"""
             You are an expert curriculum designer. Your task is to brainstorm 4-5 specific, actionable ideas for a SINGLE EDUCATIONAL LESSON based on the expert's profile.
             {base_prompt_info}
             **Your Tasks:**
             1.  **State Lesson Length:** Start by recommending the ideal lesson length is **5-12 minutes**.
-            2.  **Generate 4-5 Concrete Lesson Ideas:** For each idea, provide a clear title and a 1-2 sentence description of what the client will learn and do. These ideas must be highly specific and based on the expert's problem and expertise.
+            2.  **Generate 4-5 Concrete Lesson Ideas:** For each idea, provide a clear title and a 1-2 sentence description of what the client will learn and do.
             Format the output using Markdown with a clear heading for the lesson ideas.
             """
-        else: # For "Hands-on techniques"
+        else:
             single_lesson_prompt = f"""
             You are an expert instructional designer. Generate creative marketing content for a SINGLE, HANDS-ON LESSON (e.g., face massage, yoga) based on the expert's information.
             {base_prompt_info}
@@ -193,7 +193,6 @@ if st.session_state.stage == 3:
             Format the output using Markdown.
             """
 
-        # PROMPT FOR FULL PROGRAM
         full_program_prompt = f"""
         You are an expert instructional designer. Your task is to create a detailed outline for a FULL 12-LESSON MONTHLY PROGRAM based on the expert's transformation method.
         {base_prompt_info}
@@ -206,12 +205,11 @@ if st.session_state.stage == 3:
         **Your Tasks:**
         1.  **Write a Full Program Description:** Write an engaging description (3-4 sentences) for the one-month program.
         2.  **Generate Title and Tagline Ideas:** Generate 4 creative titles for the full program, each with a tagline.
-        3.  **Create a 4-Week Lesson Outline:** Based on the expert's A->B method, create a logical, 4-week lesson plan. Each week should contain 3 lesson titles. For each lesson, provide a one-sentence description of what the client will learn.
+        3.  **Create a 4-Week Lesson Outline:** Based on the expert's A->B method, create a logical, 4-week lesson plan. Each week should contain 3 lesson titles.
         
         Format the entire output using Markdown with clear headings.
         """
 
-        # LOGIC TO HANDLE ALL CASES
         if data.get('goal') == 'single_lesson' or data.get('time') == '1-2 hours':
             st.markdown("### Part 1: Your Single Lesson Content")
             creative_content = generate_content(single_lesson_prompt)

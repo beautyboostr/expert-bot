@@ -56,13 +56,16 @@ if 'form_data' not in st.session_state:
 def set_stage(stage):
     st.session_state.stage = stage
 
-# --- 3. SIDEBAR / QUESTIONNAIRE ---
+# --- 3. LAYOUT AND UI ---
 
-with st.sidebar:
-    st.image("logo.png", width=100) # Assumes you have a logo.png file
-    st.title("Program Advisor")
-    st.write("---")
+st.title("🎓 Expert Program Advisor")
+st.write("---")
 
+# Create a two-column layout
+col1, col2 = st.columns([1, 1.5]) # Left column is smaller than the right
+
+# --- LEFT COLUMN / QUESTIONNAIRE ---
+with col1:
     load_data_result = load_data()
     if load_data_result:
         recommendations_df, problem_rec_df = load_data_result
@@ -127,66 +130,66 @@ with st.sidebar:
                     else: st.session_state.form_data['goal'] = 'full_program'
                     set_stage(3); st.rerun()
 
-# --- 4. MAIN PAGE / BLUEPRINT DISPLAY ---
+    if st.session_state.stage > 0:
+        if st.button("Start Over", use_container_width=True):
+            st.session_state.stage = 0
+            st.session_state.form_data = {}
+            st.rerun()
 
-if st.session_state.stage < 3:
-    st.title("🎓 Welcome to the Program Advisor!")
-    st.info("Please complete the questions in the sidebar to generate your program blueprint.")
-    st.image("https://i.imgur.com/gYf4g68.png") # A placeholder image
+# --- RIGHT COLUMN / BLUEPRINT DISPLAY ---
+with col2:
+    if st.session_state.stage < 3:
+        st.info("Please complete the questions on the left to generate your program blueprint.")
+        st.image("https://i.imgur.com/gYf4g68.png") # A placeholder image
 
-if st.session_state.stage == 3:
-    st.header("🚀 Your Program Blueprint", divider="rainbow")
-    data = st.session_state.form_data
-    problem_specific_rec = find_problem_recommendation(data.get('problem', ''), problem_rec_df)
+    if st.session_state.stage == 3:
+        st.header("🚀 Your Program Blueprint")
+        data = st.session_state.form_data
+        problem_specific_rec = find_problem_recommendation(data.get('problem', ''), problem_rec_df)
 
-    with st.container(border=True):
-        st.subheader("Key Recommendations:")
-        time_based_rec = recommendations_df[recommendations_df['condition_time'] == data.get('time')]
-        if not time_based_rec.empty:
-            st.success(time_based_rec['recommendation_text'].iloc[0], icon="🕒")
+        with st.container(border=True):
+            st.subheader("Key Recommendations:")
+            time_based_rec = recommendations_df[recommendations_df['condition_time'] == data.get('time')]
+            if not time_based_rec.empty:
+                st.success(time_based_rec['recommendation_text'].iloc[0], icon="🕒")
 
-        if problem_specific_rec is not None:
-            if data.get('goal') in ['full_program', 'combo'] or data.get('time') == '8-10 hours a week':
-                st.info(f"**Recommended Content Type (Full Program):** {problem_specific_rec['recommended_program']}", icon="💡")
+            if problem_specific_rec is not None:
+                if data.get('goal') in ['full_program', 'combo'] or data.get('time') == '8-10 hours a week':
+                    st.info(f"**Recommended Content Type (Full Program):** {problem_specific_rec['recommended_program']}", icon="💡")
+                else:
+                    st.info(f"**Recommended Content Type (Single Lesson):** {problem_specific_rec['recommended_content']}", icon="💡")
+                
+                if 'client_target_audience' in problem_specific_rec and pd.notna(problem_specific_rec['client_target_audience']):
+                    st.info(f"**Ideal Client Audience:** {problem_specific_rec['client_target_audience']}", icon="👥")
+
+        st.header("✨ Your AI-Generated Creative Content")
+        with st.spinner("Our creative AI is brainstorming for you..."):
+            base_prompt_info = f"**Expert's Info:**\n* Role: {data.get('role')} | Method: {data.get('method')}\n* Problem: \"{data.get('problem')}\" | Expertise: \"{data.get('expertise')}\""
+            
+            if data.get('method') == 'Educational content':
+                single_lesson_prompt = f"You are a curriculum designer. Brainstorm 4-5 specific ideas for a SINGLE EDUCATIONAL LESSON (5-12 mins) based on the expert's profile.\n{base_prompt_info}\nFor each idea, provide a clear title and a 1-2 sentence description. Format as Markdown."
             else:
-                st.info(f"**Recommended Content Type (Single Lesson):** {problem_specific_rec['recommended_content']}", icon="💡")
-            
-            if 'client_target_audience' in problem_specific_rec and pd.notna(problem_specific_rec['client_target_audience']):
-                st.info(f"**Ideal Client Audience:** {problem_specific_rec['client_target_audience']}", icon="👥")
+                single_lesson_prompt = f"You are an instructional designer. Generate marketing content for a SINGLE, HANDS-ON LESSON based on the expert's profile.\n{base_prompt_info}\nYour tasks:\n1. **Lesson Description:** Write a short, engaging description (3-4 sentences).\n2. **Title & Tagline Ideas:** Generate 4 creative titles, each with a tagline.\nFormat as Markdown."
 
-    st.header("✨ Your AI-Generated Creative Content", divider="rainbow")
-    with st.spinner("Our creative AI is brainstorming for you..."):
-        base_prompt_info = f"**Expert's Info:**\n* Role: {data.get('role')} | Method: {data.get('method')}\n* Problem: \"{data.get('problem')}\" | Expertise: \"{data.get('expertise')}\""
-        
-        if data.get('method') == 'Educational content':
-            single_lesson_prompt = f"You are a curriculum designer. Brainstorm 4-5 specific ideas for a SINGLE EDUCATIONAL LESSON (5-12 mins) based on the expert's profile.\n{base_prompt_info}\nFor each idea, provide a clear title and a 1-2 sentence description. Format as Markdown."
-        else:
-            single_lesson_prompt = f"You are an instructional designer. Generate marketing content for a SINGLE, HANDS-ON LESSON based on the expert's profile.\n{base_prompt_info}\nYour tasks:\n1. **Lesson Description:** Write a short, engaging description (3-4 sentences).\n2. **Title & Tagline Ideas:** Generate 4 creative titles, each with a tagline.\nFormat as Markdown."
+            full_program_prompt = f"You are an instructional designer. Create a detailed outline for a FULL 12-LESSON MONTHLY PROGRAM based on the expert's A->B method.\n{base_prompt_info}\n**Transformation Method:**\n* Start (A): {data.get('point_a')}\n* Result (B): {data.get('point_b')}\n* Method: {data.get('method_desc')}\n* Structure: 12 lessons over ONE MONTH (3 per week).\n\n**Your Tasks:**\n1. **Program Description:** Write an engaging description (3-4 sentences).\n2. **Title & Tagline Ideas:** Generate 4 creative titles with taglines.\n3. **4-Week Lesson Outline:** Create a 4-week plan with 3 lessons per week. Each lesson needs a title and a 1-sentence description.\nFormat as Markdown."
 
-        full_program_prompt = f"You are an instructional designer. Create a detailed outline for a FULL 12-LESSON MONTHLY PROGRAM based on the expert's A->B method.\n{base_prompt_info}\n**Transformation Method:**\n* Start (A): {data.get('point_a')}\n* Result (B): {data.get('point_b')}\n* Method: {data.get('method_desc')}\n* Structure: 12 lessons over ONE MONTH (3 per week).\n\n**Your Tasks:**\n1. **Program Description:** Write an engaging description (3-4 sentences).\n2. **Title & Tagline Ideas:** Generate 4 creative titles with taglines.\n3. **4-Week Lesson Outline:** Create a 4-week plan with 3 lessons per week. Each lesson needs a title and a 1-sentence description.\nFormat as Markdown."
+            if data.get('goal') == 'single_lesson' or data.get('time') == '1-2 hours':
+                st.markdown("### Your Single Lesson Content")
+                creative_content = generate_content(single_lesson_prompt)
+                if creative_content: st.markdown(creative_content)
 
-        if data.get('goal') == 'single_lesson' or data.get('time') == '1-2 hours':
-            st.markdown("### Your Single Lesson Content")
-            creative_content = generate_content(single_lesson_prompt)
-            if creative_content: st.markdown(creative_content)
+            elif data.get('goal') == 'full_program':
+                st.markdown("### Your Full Program Content & Outline")
+                creative_content = generate_content(full_program_prompt)
+                if creative_content: st.markdown(creative_content)
 
-        elif data.get('goal') == 'full_program':
-            st.markdown("### Your Full Program Content & Outline")
-            creative_content = generate_content(full_program_prompt)
-            if creative_content: st.markdown(creative_content)
-
-        elif data.get('goal') == 'combo':
-            st.markdown("### Part 1: Your Single Lesson Content")
-            st.info("Here are creative ideas for the single lesson you can create now.", icon="⚡")
-            single_lesson_content = generate_content(single_lesson_prompt)
-            if single_lesson_content: st.markdown(single_lesson_content)
-            
-            st.markdown("### Part 2: Your Full Program Outline")
-            st.info("And here is the detailed outline for the full program you can build next.", icon="🗺️")
-            full_program_content = generate_content(full_program_prompt)
-            if full_program_content: st.markdown(full_program_content)
-
-    if st.sidebar.button("Start Over", use_container_width=True):
-        st.session_state.stage = 0
-        st.session_state.form_data = {}
-        st.rerun()
+            elif data.get('goal') == 'combo':
+                st.markdown("### Part 1: Your Single Lesson Content")
+                st.info("Here are creative ideas for the single lesson you can create now.", icon="⚡")
+                single_lesson_content = generate_content(single_lesson_prompt)
+                if single_lesson_content: st.markdown(single_lesson_content)
+                
+                st.markdown("### Part 2: Your Full Program Outline")
+                st.info("And here is the detailed outline for the full program you can build next.", icon="🗺️")
+                full_program_content = generate_content(full_program_prompt)
+                if full_program_content: st.markdown(full_program_content)

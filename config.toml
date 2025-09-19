@@ -1,17 +1,11 @@
 # .streamlit/config.toml
 
+[client]
+showSidebarNavigation = false
+
 [theme]
-# A modern, professional blue for buttons and interactive elements.
-primaryColor = "#3b82f6"
-
-# A clean, dark background.
-backgroundColor = "#020617"
-
-# A slightly lighter dark color for the sidebar and containers.
-secondaryBackgroundColor = "#0f172a"
-
-# A bright, clear text color.
-textColor = "#f8fafc"
-
-# The font for the app.
+primaryColor = "#E6B4A9"
+backgroundColor = "#FDFBFA"
+secondaryBackgroundColor = "#FBF6F1"
+textColor = "#312B29"
 font = "sans serif"

@@ -32,7 +32,7 @@ def load_data():
         return None, None
 
 def find_problem_recommendation(user_problem_text, recommendations_df):
-    """Scans user text for keywords and returns the recommendation row."""
+    """Scans user text for keywords to find the correct client audience."""
     if not user_problem_text or not isinstance(user_problem_text, str):
         return None
     for _, row in recommendations_df.iterrows():
@@ -40,8 +40,8 @@ def find_problem_recommendation(user_problem_text, recommendations_df):
             return row
     return None
 
-def generate_creative_content(prompt):
-    """Sends the prompt to the Gemini API and returns the generated content."""
+def generate_content(prompt):
+    """A single function to send any prompt to the Gemini API."""
     try:
         model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content(prompt)
@@ -85,7 +85,19 @@ with st.form("expert_form"):
 
 if submitted:
     st.header("🚀 Your Program Blueprint", divider="rainbow")
-    problem_specific_rec = find_problem_recommendation(answer4, problem_rec_df)
+    
+    # --- 4. DYNAMIC RECOMMENDATION GENERATION ---
+    with st.spinner("Analyzing your profile to generate custom recommendations..."):
+        # ** NEW LOGIC: Generate the content focus dynamically **
+        recommendation_prompt = f"""
+        Based on the following expert profile, generate a single, concise "Recommended Content Focus" for their program or lesson. The recommendation should be one sentence and synthesize their problem and expertise.
+
+        - **Client Problem:** "{answer4}"
+        - **Expertise:** "{answer5}"
+
+        Generate the "Recommended Content Focus" only.
+        """
+        recommended_content_focus = generate_content(recommendation_prompt)
 
     with st.container(border=True):
         st.subheader("Key Recommendations:")
@@ -93,20 +105,18 @@ if submitted:
         if not time_based_rec.empty:
             st.success(time_based_rec['recommendation_text'].iloc[0], icon="🕒")
 
-        if problem_specific_rec is not None:
-            # ** NEW LOGIC: Show different content focus based on time **
-            if answer3 == "8-10 hours a week":
-                st.info(f"**Recommended Content Focus:** {problem_specific_rec['recommended_program']}", icon="💡")
-            else:
-                st.info(f"**Recommended Content Focus:** {problem_specific_rec['recommended_content']}", icon="💡")
-            
-            # ** NEW LOGIC: Display the correct client audience **
-            if 'client_target_audience' in problem_specific_rec and pd.notna(problem_specific_rec['client_target_audience']):
-                st.info(f"**Ideal Client Target Audience:** {problem_specific_rec['client_target_audience']}", icon="👥")
+        # Display the newly generated content focus
+        if recommended_content_focus:
+            st.info(f"**Recommended Content Focus:** {recommended_content_focus.strip()}", icon="💡")
+        
+        # Find and display the client audience from the CSV
+        problem_specific_rec = find_problem_recommendation(answer4, problem_rec_df)
+        if problem_specific_rec is not None and 'client_target_audience' in problem_specific_rec and pd.notna(problem_specific_rec['client_target_audience']):
+            st.info(f"**Ideal Client Target Audience:** {problem_specific_rec['client_target_audience']}", icon="👥")
 
     st.header("✨ Your AI-Generated Creative Content", divider="rainbow")
-    with st.spinner("Our creative AI is brainstorming for you... This may take a moment."):
-        # --- ** NEW LOGIC: ADAPTIVE PROMPT GENERATION ** ---
+    with st.spinner("Our creative AI is brainstorming your program content... This may take a moment."):
+        # --- ADAPTIVE PROMPT GENERATION (from previous step, still excellent) ---
         prompt_for_gemini = ""
         base_prompt_info = f"""
         **Expert's Information:**
@@ -163,7 +173,7 @@ if submitted:
             The tone must be professional and empowering. Format the entire output using Markdown with clear headings for each task.
             """
 
-        creative_content = generate_creative_content(prompt_for_gemini)
+        creative_content = generate_content(prompt_for_gemini)
         if creative_content:
             with st.container(border=True):
                 st.markdown(creative_content)

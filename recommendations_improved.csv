@@ -1,0 +1,4 @@
+condition_role,condition_method,condition_time,recommendation_type,recommendation_text
+*any*,*any*,1-2 hours,program_length,"**1 Additional Lesson:** Recommended to create a single, focused lesson (5-12 mins) for the 'additional classes' section."
+*any*,*any*,3-4 hours a week,program_length,**1 Additional Lesson & Program Outline:** Recommended to create one high-quality additional lesson and use the remaining time to outline the full 12-lesson program.
+*any*,*any*,8-10 hours a week,program_length,"**Full 12-Lesson Program:** Recommended to create a complete, 12-lesson monthly program."

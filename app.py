@@ -5,7 +5,7 @@ import os
 
 # --- 1. SETUP AND CONFIGURATION ---
 
-st.set_page_config(page_title="Expert Program Advisor Bot", layout="centered")
+st.set_page_config(page_title="BeautyBoostr Expert Program Advisor Bot", layout="centered")
 
 # Configure the Gemini API key securely
 try:

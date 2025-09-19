@@ -66,9 +66,15 @@ else:
 
 # STAGE 0: Initial Profile Form
 if st.session_state.stage == 0:
-    st.title("🎓 Welcome to the Program Advisor!")
-    st.info("**Hello!** This bot will help you design your next educational program.", icon="👋")
-
+    st.title("🎓 Welcome to the BeutyBoostr Program Advisor!")
+    st.info("**Hello!** This bot will help you design your next skincare program.", icon="👋")
+# --- LEFT COLUMN / QUESTIONNAIRE ---
+with col1:
+    st.image("logo.png", width=100) # <-- ADD THIS LINE
+    st.write("---")
+    
+    load_data_result = load_data()
+    # ... rest of your code in the left column
     with st.form("expert_form_1"):
         st.header("Step 1: Your Profile", divider="rainbow")
         q1_options = ["Dermatologist", "Facialist", "Esthetician", "Skincare Coach", "Skincare Influencer", "Other"]

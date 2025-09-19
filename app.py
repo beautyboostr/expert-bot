@@ -69,7 +69,7 @@ else:
 
 # STAGE 0: Initial Profile Form
 if st.session_state.stage == 0:
-    st.title("🎓 Welcome to the BeautyBoostr Program Advisor!")
+    st.title("Welcome to the BeautyBoostr Program Advisor!")
     st.info("**Hello!** This bot will help you design your next skincare program that your client really need.", icon="👋")
 
     with st.form("expert_form_1"):

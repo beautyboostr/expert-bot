@@ -148,7 +148,7 @@ if st.session_state.stage == 2:
                 st.session_state.form_data.update({"point_a": point_a, "point_b": point_b, "method_desc": method_desc})
                 if st.session_state.form_data.get('time') == '3-4 hours a week': st.session_state.form_data['goal'] = 'combo'
                 else: st.session_state.form_data['goal'] = 'full_program'
-                set_stage(5) 
+                set_stage(6) # Final stage is now 6
                 st.rerun()
 
 # STAGE 4: CATEGORY SELECTION FOR SINGLE LESSON
@@ -156,13 +156,7 @@ if st.session_state.stage == 4:
     st.header("📚 Step 3: Choose a Lesson Category", divider="gray")
     st.info("To give you the best ideas, please select the category for your single lesson.", icon="✨")
     
-    lesson_categories = [
-        "Educational content",
-        "Hands-on (no equipment)",
-        "Hands-on (with equipment)",
-        "Hands-on (posture/body)"
-    ]
-    
+    lesson_categories = ["Educational content", "Hands-on (no equipment)", "Hands-on (with equipment)", "Hands-on (posture/body)"]
     category = st.selectbox("Select your lesson category (Required)", lesson_categories, index=None, placeholder="Choose a category...")
     
     if st.button("Next Step", use_container_width=True, type="primary"):
@@ -170,37 +164,45 @@ if st.session_state.stage == 4:
             st.error("⚠️ Please select a category to continue.")
         else:
             st.session_state.form_data['category'] = category
-            if category == "Hands-on (with equipment)":
-                set_stage(4.5)
-            else:
-                set_stage(5)
+            if category == "Hands-on (with equipment)": set_stage(4.5)
+            else: set_stage(5) # ** NEW: Go to lesson outcome stage **
             st.rerun()
 
 # STAGE 4.5: EQUIPMENT SELECTION
 if st.session_state.stage == 4.5:
     st.header("⚙️ Step 4: Select Your Equipment", divider="gray")
     st.info("Which specific tool will this lesson focus on?", icon="✨")
-
     equipment_list = ["Guasha", "Facial Cups", "Face Tape", "Facial Roller", "Microcurrent Device", "LED Therapy Mask", "Other"]
     equipment = st.selectbox("Select your primary tool (Required)", equipment_list, index=None, placeholder="Choose your equipment...")
 
-    if st.button("Generate My Lesson Blueprint", use_container_width=True, type="primary"):
+    if st.button("Next Step", use_container_width=True, type="primary"):
         if not equipment:
             st.error("⚠️ Please select your equipment to continue.")
         else:
             st.session_state.form_data['equipment'] = equipment
-            set_stage(5)
+            set_stage(5) # ** NEW: Go to lesson outcome stage **
             st.rerun()
 
-
-# STAGE 5: Final Blueprint Generation
+# ** NEW STAGE 5: LESSON OUTCOME **
 if st.session_state.stage == 5:
+    st.header("🎯 Step 5: Define Your Lesson's Outcome", divider="gray")
+    st.info("To brainstorm the best content, tell us the specific goal of this single lesson.", icon="✨")
+    with st.form("lesson_outcome_form"):
+        lesson_outcome = st.text_area("What is the single most important result your client will get from this lesson? (Required)", placeholder="Example: My client will be able to perform a 5-minute de-puffing eye massage to look refreshed.")
+        submitted = st.form_submit_button("Generate My Lesson Blueprint", use_container_width=True, type="primary")
+        if submitted:
+            if not lesson_outcome:
+                st.error("⚠️ Please define the outcome for your lesson.")
+            else:
+                st.session_state.form_data['lesson_outcome'] = lesson_outcome
+                set_stage(6) # Go to final blueprint
+                st.rerun()
+
+# STAGE 6: Final Blueprint Generation
+if st.session_state.stage == 6:
     st.header("🚀 Your Program Blueprint", divider="gray")
     data = st.session_state.form_data
     problem_specific_rec = find_problem_recommendation(data.get('problem', ''), problem_rec_df)
-    
-    # Store recommended ideas for later use by the AI
-    recommended_ideas_str = ""
 
     with st.container(border=True):
         st.subheader("Key Recommendations:")
@@ -208,31 +210,11 @@ if st.session_state.stage == 5:
         if not time_based_rec.empty:
             st.success(time_based_rec['recommendation_text'].iloc[0], icon="🕒")
 
-        if problem_specific_rec is not None:
-            expert_method_category = data.get('category', data.get('method'))
-            
-            st.markdown(f"**Recommended ideas for your *{expert_method_category}* lesson (7-12 mins):**")
-            
-            ideas_to_show = ""
-            if expert_method_category == "Educational content":
-                ideas_to_show = problem_specific_rec.get('educational_ideas')
-            elif expert_method_category == "Hands-on (no equipment)":
-                ideas_to_show = problem_specific_rec.get('hands_on_no_equipment_ideas')
-            elif expert_method_category == "Hands-on (with equipment)":
-                ideas_to_show = problem_specific_rec.get('hands_on_with_equipment_ideas')
-            elif expert_method_category == "Hands-on (posture/body)":
-                ideas_to_show = problem_specific_rec.get('hands_on_posture_ideas')
-
-            if pd.notna(ideas_to_show) and ideas_to_show.strip() != "":
-                lesson_ideas = str(ideas_to_show).split('|')
-                recommended_ideas_str = "\n".join([f"- {idea.strip()}" for idea in lesson_ideas])
-                for idea in lesson_ideas:
-                    st.info(f"💡 {idea.strip()}")
-            else:
-                st.warning("No specific ideas found in our database for this combination. The AI will brainstorm general ideas for you below.")
-
-            if 'client_target_audience' in problem_specific_rec and pd.notna(problem_specific_rec['client_target_audience']):
-                st.info(f"**Ideal Client Target Audience:** {problem_specific_rec['client_target_audience']}", icon="👥")
+        if data.get('goal') == 'single_lesson':
+            st.info(f"**Recommended Lesson Length:** 7-12 minutes for a single, focused lesson.", icon="💡")
+        
+        if problem_specific_rec is not None and 'client_target_audience' in problem_specific_rec and pd.notna(problem_specific_rec['client_target_audience']):
+            st.info(f"**Ideal Client Target Audience:** {problem_specific_rec['client_target_audience']}", icon="👥")
 
     st.header("✨ Your AI-Generated Creative Content", divider="gray")
     with st.spinner("Our creative AI is brainstorming for you... This may take a moment."):
@@ -250,21 +232,19 @@ if st.session_state.stage == 5:
         if data.get('equipment'):
             equipment_info = f"* **Specific Equipment:** {data.get('equipment')}"
 
-        # ** NEW, INTEGRATED SINGLE LESSON PROMPT **
+        # ** NEW, HYPER-TARGETED SINGLE LESSON PROMPT **
         single_lesson_prompt = f"""
         {base_prompt_info}
         * **Chosen Lesson Category:** {data.get('category')}
         {equipment_info}
-
-        **Recommended Starting Ideas:**
-        {recommended_ideas_str}
+        * **Desired Lesson Outcome for the Client:** "{data.get('lesson_outcome')}"
 
         **Your Task:**
-        Act as a creative partner. Take the "Recommended Starting Ideas" and expand upon them. For each idea, generate:
+        Based on all the information provided, generate 4-5 concrete lesson ideas for a **self-care lesson**. For each idea, provide:
         1. An empowering **Self-Care Title**.
-        2. A **Self-Care Concept** (1-2 sentences explaining the routine the client will learn and the benefit they will feel).
+        2. A **Self-Care Concept** (1-2 sentences explaining the routine the client will learn to achieve the desired outcome).
         
-        Ensure your output is aligned with the starting ideas. Format the output using Markdown with a clear heading for each developed idea.
+        Format the output using Markdown with a clear heading for each idea.
         """
 
         full_program_prompt = f"""
@@ -286,7 +266,7 @@ if st.session_state.stage == 5:
 
         if data.get('goal') == 'single_lesson':
             st.markdown("### Brainstorming Your Single Lesson")
-            st.info("Here are AI-generated concepts to develop the recommended ideas into a full lesson.", icon="🧠")
+            st.info("Here are some AI-generated ideas for your self-care lesson.", icon="🧠")
             creative_content = generate_content(single_lesson_prompt)
             if creative_content:
                 with st.container(border=True):
@@ -316,7 +296,7 @@ if st.session_state.stage == 5:
 
         elif data.get('goal') == 'combo':
             st.markdown("### Part 1: Brainstorming Your Single Lesson")
-            st.info("Here are AI-generated concepts to develop the recommended ideas into a full lesson.", icon="⚡")
+            st.info("Here are AI-generated ideas for the single self-care lesson you can create now.", icon="⚡")
             single_lesson_content = generate_content(single_lesson_prompt)
             if single_lesson_content:
                 with st.container(border=True):

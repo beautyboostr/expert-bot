@@ -99,7 +99,7 @@ if st.session_state.stage == 0:
                 st.session_state.form_data.update({"role": answer1, "method": answer2, "time": answer3, "problem": answer4, "expertise": answer5})
                 if answer3 == "3-4 hours a week": set_stage(1)
                 elif answer3 == "8-10 hours a week": set_stage(2)
-                else: st.session_state.form_data['goal'] = 'single_lesson'; set_stage(3)
+                else: st.session_state.form_data['goal'] = 'single_lesson'; set_stage(4) # ** NEW: Go to category selection
                 st.rerun()
 
 # STAGE 1: Decision Point for 3-4 Hour Users
@@ -111,7 +111,7 @@ if st.session_state.stage == 1:
     with col1:
         if st.button("Create a Single Lesson", use_container_width=True, type="primary"):
             st.session_state.form_data['goal'] = 'single_lesson'
-            set_stage(3)
+            set_stage(4) # ** NEW: Go to category selection
             st.rerun()
     with col2:
         if st.button("Outline a Full 12-Lesson Program", use_container_width=True):
@@ -139,6 +139,28 @@ if st.session_state.stage == 2:
                 set_stage(3)
                 st.rerun()
 
+# ** NEW STAGE 4: CATEGORY SELECTION FOR SINGLE LESSON **
+if st.session_state.stage == 4:
+    st.header("📚 Step 3: Choose a Lesson Category", divider="gray")
+    st.info("To give you the best ideas, please select the category for your single lesson.", icon="✨")
+    
+    lesson_categories = [
+        "Hands-on lesson with no equipment",
+        "Hands-on with equipment (e.g., guasha, jars)",
+        "Hands-on for posture or body exercises",
+        "Educational content (Skin 101)"
+    ]
+    
+    category = st.selectbox("Select your lesson category (Required)", lesson_categories, index=None, placeholder="Choose a category...")
+    
+    if st.button("Generate My Lesson Blueprint", use_container_width=True, type="primary"):
+        if not category:
+            st.error("⚠️ Please select a category to continue.")
+        else:
+            st.session_state.form_data['category'] = category
+            set_stage(3) # Go to final blueprint
+            st.rerun()
+
 # STAGE 3: Final Blueprint Generation
 if st.session_state.stage == 3:
     st.header("🚀 Your Program Blueprint", divider="gray")
@@ -152,17 +174,16 @@ if st.session_state.stage == 3:
             st.success(time_based_rec['recommendation_text'].iloc[0], icon="🕒")
 
         if problem_specific_rec is not None:
-            # ** NEW DYNAMIC RECOMMENDATION LOGIC **
+            # DYNAMIC RECOMMENDATION LOGIC
             program_goal = problem_specific_rec['program_goal']
             expert_method = data.get('method')
             
-            # Build the recommendation text based on the expert's method
             rec_text = f"**Recommended Content Focus:** A program to help clients {program_goal}"
             if expert_method == "Educational content":
                 rec_text += " This can be an educational program focusing on topics like " + ", ".join(problem_specific_rec['educational_ideas'].split('|')) + "."
             elif expert_method == "Hands-on techniques":
                 rec_text += " This can be a hands-on program teaching techniques like " + ", ".join(problem_specific_rec['hands_on_ideas'].split('|')) + "."
-            else: # Combination
+            else:
                 rec_text += " This can be a combined program with educational topics like " + ", ".join(problem_specific_rec['educational_ideas'].split('|')) + " and hands-on techniques such as " + ", ".join(problem_specific_rec['hands_on_ideas'].split('|')) + "."
 
             st.info(rec_text, icon="💡")
@@ -179,14 +200,18 @@ if st.session_state.stage == 3:
         * Client Problem: "{data.get('problem')}" | Expertise: "{data.get('expertise')}"
         """
         
+        # ** NEW, SMARTER PROMPT FOR A SINGLE LESSON **
         single_lesson_prompt = f"""
-        You are an expert curriculum designer. Your task is to brainstorm 4-5 specific, actionable ideas for a SINGLE EDUCATIONAL or HANDS-ON LESSON based on the expert's profile. Your goal is to provide the *substance* of what the lesson could be about.
+        You are an expert curriculum designer. Your task is to brainstorm 4-5 specific, actionable ideas for a SINGLE LESSON based on the expert's profile and chosen category. Your goal is to provide the *substance* of what the lesson could be about.
+
         {base_prompt_info}
+        * **Chosen Lesson Category:** {data.get('category')}
+
         **Your Task:**
         Generate 4-5 concrete lesson ideas. For each idea, provide:
         1. A clear, descriptive **Title**.
-        2. A **Concept** (1-2 sentences explaining what the student will learn).
-        3. An **Actionable Tip** or **Key Takeaway** (the one thing they should remember or do).
+        2. A **Concept** (1-2 sentences explaining what the student will learn and do, tailored to the chosen category).
+        
         Format the output using Markdown with a clear heading for each idea.
         """
 
@@ -205,7 +230,7 @@ if st.session_state.stage == 3:
         Format the entire output using Markdown with clear headings.
         """
 
-        if data.get('goal') == 'single_lesson' or data.get('time') == '1-2 hours':
+        if data.get('goal') == 'single_lesson':
             st.markdown("### Brainstorming Your Single Lesson")
             st.info("Here are some AI-generated ideas to help you brainstorm the content of your lesson.", icon="🧠")
             creative_content = generate_content(single_lesson_prompt)

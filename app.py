@@ -90,7 +90,6 @@ if st.session_state.stage == 0:
     with st.form("expert_form_1"):
         st.header("👤 Step 1: Your Profile", divider="gray")
         q1_options = ["Dermatologist", "Facialist", "Esthetician", "Skincare Coach", "Skincare Influencer", "Other"]
-        # ** CORRECTED OPTIONS FOR QUESTION 2 **
         q2_options = ["Educational content", "Hands-on techniques", "A combination of both"]
         q3_options = ["1-2 hours", "3-4 hours a week", "8-10 hours a week"]
 
@@ -207,41 +206,33 @@ if st.session_state.stage == 5:
             st.success(time_based_rec['recommendation_text'].iloc[0], icon="🕒")
 
         if problem_specific_rec is not None:
-            expert_method_category = data.get('category', data.get('method'))
+            # ** CORRECTED LOGIC FOR DISPLAYING RECOMMENDATIONS **
+            goal = data.get('goal')
             
-            st.markdown(f"**Recommended ideas for your *{expert_method_category}* lesson:**")
-            
-            ideas_to_show_list = []
-            
-            # Logic for handling specific and general methods
-            if expert_method_category == "Educational content":
-                ideas_to_show_list.append(problem_specific_rec.get('educational_ideas'))
-            elif expert_method_category == "Hands-on (no equipment)":
-                ideas_to_show_list.append(problem_specific_rec.get('hands_on_no_equipment_ideas'))
-            elif expert_method_category == "Hands-on (with equipment)":
-                ideas_to_show_list.append(problem_specific_rec.get('hands_on_with_equipment_ideas'))
-            elif expert_method_category == "Hands-on (posture/body)":
-                ideas_to_show_list.append(problem_specific_rec.get('hands_on_posture_ideas'))
-            elif expert_method_category == "Hands-on techniques":
-                ideas_to_show_list.append(problem_specific_rec.get('hands_on_no_equipment_ideas'))
-                ideas_to_show_list.append(problem_specific_rec.get('hands_on_with_equipment_ideas'))
-                ideas_to_show_list.append(problem_specific_rec.get('hands_on_posture_ideas'))
-            elif expert_method_category == "A combination of both":
-                ideas_to_show_list.append(problem_specific_rec.get('educational_ideas'))
-                ideas_to_show_list.append(problem_specific_rec.get('hands_on_no_equipment_ideas'))
-                ideas_to_show_list.append(problem_specific_rec.get('hands_on_with_equipment_ideas'))
-                ideas_to_show_list.append(problem_specific_rec.get('hands_on_posture_ideas'))
-            
-            all_ideas = []
-            for idea_set in ideas_to_show_list:
-                if pd.notna(idea_set):
-                    all_ideas.extend(str(idea_set).split('|'))
+            if goal == 'single_lesson':
+                expert_method_category = data.get('category')
+                st.markdown(f"**Recommended ideas for your *{expert_method_category}* lesson (7-12 mins):**")
+                
+                ideas_to_show = ""
+                if expert_method_category == "Educational content":
+                    ideas_to_show = problem_specific_rec.get('educational_ideas')
+                elif expert_method_category == "Hands-on (no equipment)":
+                    ideas_to_show = problem_specific_rec.get('hands_on_no_equipment_ideas')
+                elif expert_method_category == "Hands-on (with equipment)":
+                    ideas_to_show = problem_specific_rec.get('hands_on_with_equipment_ideas')
+                elif expert_method_category == "Hands-on (posture/body)":
+                    ideas_to_show = problem_specific_rec.get('hands_on_posture_ideas')
 
-            if all_ideas:
-                for idea in all_ideas:
-                    st.info(f"💡 {idea.strip()}")
-            else:
-                st.warning("No specific ideas found in our database for this combination. The AI will brainstorm general ideas for you below.")
+                if pd.notna(ideas_to_show) and ideas_to_show.strip() != "":
+                    lesson_ideas = str(ideas_to_show).split('|')
+                    for idea in lesson_ideas:
+                        st.info(f"💡 {idea.strip()}")
+                else:
+                    st.warning("No specific ideas found in our database for this combination. The AI will brainstorm general ideas for you below.")
+            
+            elif goal in ['full_program', 'combo']:
+                rec_text = f"**Recommended Content Focus:** A program to help clients {problem_specific_rec['program_goal']}"
+                st.info(rec_text, icon="💡")
 
             if 'client_target_audience' in problem_specific_rec and pd.notna(problem_specific_rec['client_target_audience']):
                 st.info(f"**Ideal Client Target Audience:** {problem_specific_rec['client_target_audience']}", icon="👥")

@@ -148,7 +148,7 @@ if st.session_state.stage == 2:
                 st.session_state.form_data.update({"point_a": point_a, "point_b": point_b, "method_desc": method_desc})
                 if st.session_state.form_data.get('time') == '3-4 hours a week': st.session_state.form_data['goal'] = 'combo'
                 else: st.session_state.form_data['goal'] = 'full_program'
-                set_stage(6) # Final stage is now 6
+                set_stage(6)
                 st.rerun()
 
 # STAGE 4: CATEGORY SELECTION FOR SINGLE LESSON
@@ -165,7 +165,7 @@ if st.session_state.stage == 4:
         else:
             st.session_state.form_data['category'] = category
             if category == "Hands-on (with equipment)": set_stage(4.5)
-            else: set_stage(5) # ** NEW: Go to lesson outcome stage **
+            else: set_stage(5)
             st.rerun()
 
 # STAGE 4.5: EQUIPMENT SELECTION
@@ -180,10 +180,10 @@ if st.session_state.stage == 4.5:
             st.error("⚠️ Please select your equipment to continue.")
         else:
             st.session_state.form_data['equipment'] = equipment
-            set_stage(5) # ** NEW: Go to lesson outcome stage **
+            set_stage(5)
             st.rerun()
 
-# ** NEW STAGE 5: LESSON OUTCOME **
+# STAGE 5: LESSON OUTCOME
 if st.session_state.stage == 5:
     st.header("🎯 Step 5: Define Your Lesson's Outcome", divider="gray")
     st.info("To brainstorm the best content, tell us the specific goal of this single lesson.", icon="✨")
@@ -195,7 +195,7 @@ if st.session_state.stage == 5:
                 st.error("⚠️ Please define the outcome for your lesson.")
             else:
                 st.session_state.form_data['lesson_outcome'] = lesson_outcome
-                set_stage(6) # Go to final blueprint
+                set_stage(6)
                 st.rerun()
 
 # STAGE 6: Final Blueprint Generation
@@ -232,7 +232,6 @@ if st.session_state.stage == 6:
         if data.get('equipment'):
             equipment_info = f"* **Specific Equipment:** {data.get('equipment')}"
 
-        # ** NEW, HYPER-TARGETED SINGLE LESSON PROMPT **
         single_lesson_prompt = f"""
         {base_prompt_info}
         * **Chosen Lesson Category:** {data.get('category')}
@@ -287,27 +286,34 @@ if st.session_state.stage == 6:
                     set_stage(2)
                     st.rerun()
 
-        elif data.get('goal') == 'full_program':
-            st.markdown("### Your Full Program Content & Outline")
-            creative_content = generate_content(full_program_prompt)
-            if creative_content:
-                with st.container(border=True):
-                    st.markdown(creative_content)
+        elif data.get('goal') == 'full_program' or data.get('goal') == 'combo':
+            if data.get('goal') == 'full_program':
+                 st.markdown("### Your Full Program Content & Outline")
+            else: # Combo
+                 st.markdown("### Part 1: Brainstorming Your Single Lesson")
+                 st.info("Here are AI-generated ideas for the single self-care lesson you can create now.", icon="⚡")
+                 single_lesson_content = generate_content(single_lesson_prompt)
+                 if single_lesson_content:
+                     with st.container(border=True):
+                         st.markdown(single_lesson_content)
+                 st.markdown("### Part 2: Your Full Program Outline")
+                 st.info("And here is the detailed outline for the full self-care program you can build next.", icon="🗺️")
 
-        elif data.get('goal') == 'combo':
-            st.markdown("### Part 1: Brainstorming Your Single Lesson")
-            st.info("Here are AI-generated ideas for the single self-care lesson you can create now.", icon="⚡")
-            single_lesson_content = generate_content(single_lesson_prompt)
-            if single_lesson_content:
-                with st.container(border=True):
-                    st.markdown(single_lesson_content)
-            
-            st.markdown("### Part 2: Your Full Program Outline")
-            st.info("And here is the detailed outline for the full self-care program you can build next.", icon="🗺️")
             full_program_content = generate_content(full_program_prompt)
             if full_program_content:
                 with st.container(border=True):
                     st.markdown(full_program_content)
+            
+            # ** NEW "WHAT'S NEXT" SECTION FOR PROGRAMS **
+            st.success("What to Do Next:", icon="✅")
+            st.markdown("""
+            You now have a complete outline for your 12-lesson program! The next step is to build out each lesson.
+            1.  **Start with Lesson 1** from your outline above.
+            2.  **Copy its title and concept**.
+            3.  **Take it to our Lesson Blueprint Bot** to generate the full structure and script for that specific video.
+            4.  Repeat this process for each of your 12 lessons to build out your entire program.
+            """)
+            st.link_button("Go to Lesson Blueprint Bot", "https://individual.streamlit.app/")
 
     if st.button("Start Over", use_container_width=True):
         st.session_state.stage = 0

@@ -111,7 +111,7 @@ if st.session_state.stage == 0:
                 elif answer3 == "8-10 hours a week": set_stage(2)
                 else: 
                     st.session_state.form_data['goal'] = 'single_lesson'
-                    set_stage(4) # ** FIX: Go to category selection **
+                    set_stage(4) 
                 st.rerun()
 
 # STAGE 1: Decision Point for 3-4 Hour Users
@@ -123,7 +123,7 @@ if st.session_state.stage == 1:
     with col1:
         if st.button("Create a Single Lesson", use_container_width=True, type="primary"):
             st.session_state.form_data['goal'] = 'single_lesson'
-            set_stage(4) # ** FIX: Go to category selection **
+            set_stage(4)
             st.rerun()
     with col2:
         if st.button("Outline a Full 12-Lesson Program", use_container_width=True):
@@ -148,10 +148,10 @@ if st.session_state.stage == 2:
                 st.session_state.form_data.update({"point_a": point_a, "point_b": point_b, "method_desc": method_desc})
                 if st.session_state.form_data.get('time') == '3-4 hours a week': st.session_state.form_data['goal'] = 'combo'
                 else: st.session_state.form_data['goal'] = 'full_program'
-                set_stage(3)
+                set_stage(5) # ** RENAMED FINAL STAGE **
                 st.rerun()
 
-# ** NEW STAGE 4: CATEGORY SELECTION FOR SINGLE LESSON **
+# STAGE 4: CATEGORY SELECTION FOR SINGLE LESSON
 if st.session_state.stage == 4:
     st.header("📚 Step 3: Choose a Lesson Category", divider="gray")
     st.info("To give you the best ideas, please select the category for your single lesson.", icon="✨")
@@ -165,17 +165,37 @@ if st.session_state.stage == 4:
     
     category = st.selectbox("Select your lesson category (Required)", lesson_categories, index=None, placeholder="Choose a category...")
     
-    if st.button("Generate My Lesson Blueprint", use_container_width=True, type="primary"):
+    if st.button("Next Step", use_container_width=True, type="primary"):
         if not category:
             st.error("⚠️ Please select a category to continue.")
         else:
             st.session_state.form_data['category'] = category
-            set_stage(3) # Go to final blueprint
+            # ** NEW CONDITIONAL LOGIC **
+            if category == "Hands-on (with equipment)":
+                set_stage(4.5) # Go to new equipment selection stage
+            else:
+                set_stage(5) # Go directly to final blueprint
+            st.rerun()
+
+# ** NEW STAGE 4.5: EQUIPMENT SELECTION **
+if st.session_state.stage == 4.5:
+    st.header("⚙️ Step 4: Select Your Equipment", divider="gray")
+    st.info("Which specific tool will this lesson focus on?", icon="✨")
+
+    equipment_list = ["Guasha", "Facial Cups", "Kansa Wand", "Facial Roller", "Microcurrent Device", "LED Therapy Mask", "Other"]
+    equipment = st.selectbox("Select your primary tool (Required)", equipment_list, index=None, placeholder="Choose your equipment...")
+
+    if st.button("Generate My Lesson Blueprint", use_container_width=True, type="primary"):
+        if not equipment:
+            st.error("⚠️ Please select your equipment to continue.")
+        else:
+            st.session_state.form_data['equipment'] = equipment
+            set_stage(5) # Go to final blueprint
             st.rerun()
 
 
-# STAGE 3: Final Blueprint Generation
-if st.session_state.stage == 3:
+# STAGE 5: Final Blueprint Generation
+if st.session_state.stage == 5:
     st.header("🚀 Your Program Blueprint", divider="gray")
     data = st.session_state.form_data
     problem_specific_rec = find_problem_recommendation(data.get('problem', ''), problem_rec_df)
@@ -187,7 +207,7 @@ if st.session_state.stage == 3:
             st.success(time_based_rec['recommendation_text'].iloc[0], icon="🕒")
 
         if problem_specific_rec is not None:
-            expert_method = data.get('category', data.get('method')) # Use new category if available
+            expert_method = data.get('category', data.get('method'))
             
             st.markdown("**Recommended Content Ideas:**")
             
@@ -218,16 +238,22 @@ if st.session_state.stage == 3:
         * Client Problem: "{data.get('problem')}" | Expertise: "{data.get('expertise')}"
         """
         
+        # ** NEW, SMARTER PROMPT FOR A SINGLE LESSON **
+        equipment_info = ""
+        if data.get('equipment'):
+            equipment_info = f"* **Specific Equipment:** {data.get('equipment')}"
+
         single_lesson_prompt = f"""
         You are an expert curriculum designer. Your task is to brainstorm 4-5 specific, actionable ideas for a SINGLE LESSON based on the expert's profile and chosen category. Your goal is to provide the *substance* of what the lesson could be about.
 
         {base_prompt_info}
         * **Chosen Lesson Category:** {data.get('category')}
+        {equipment_info}
 
         **Your Task:**
         Generate 4-5 concrete lesson ideas. For each idea, provide:
         1. A clear, descriptive **Title**.
-        2. A **Concept** (1-2 sentences explaining what the student will learn and do, tailored to the chosen category).
+        2. A **Concept** (1-2 sentences explaining what the student will learn and do, tailored to the chosen category and specific equipment if provided).
         
         Format the output using Markdown with a clear heading for each idea.
         """

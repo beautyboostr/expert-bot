@@ -90,7 +90,8 @@ if st.session_state.stage == 0:
     with st.form("expert_form_1"):
         st.header("👤 Step 1: Your Profile", divider="gray")
         q1_options = ["Dermatologist", "Facialist", "Esthetician", "Skincare Coach", "Skincare Influencer", "Other"]
-        q2_options = ["Educational content", "Hands-on (no equipment)", "Hands-on (with equipment)", "Hands-on (posture/body)"]
+        # ** CORRECTED OPTIONS FOR QUESTION 2 **
+        q2_options = ["Educational content", "Hands-on techniques", "A combination of both"]
         q3_options = ["1-2 hours", "3-4 hours a week", "8-10 hours a week"]
 
         answer1 = st.selectbox("Which of the following best describes your professional role? (Required)", q1_options, index=None, placeholder="Select your role...")
@@ -210,34 +211,37 @@ if st.session_state.stage == 5:
             
             st.markdown(f"**Recommended ideas for your *{expert_method_category}* lesson:**")
             
-            ideas_to_show = ""
+            ideas_to_show_list = []
+            
+            # Logic for handling specific and general methods
             if expert_method_category == "Educational content":
-                ideas_to_show = problem_specific_rec.get('educational_ideas')
+                ideas_to_show_list.append(problem_specific_rec.get('educational_ideas'))
             elif expert_method_category == "Hands-on (no equipment)":
-                ideas_to_show = problem_specific_rec.get('hands_on_no_equipment_ideas')
+                ideas_to_show_list.append(problem_specific_rec.get('hands_on_no_equipment_ideas'))
             elif expert_method_category == "Hands-on (with equipment)":
-                ideas_to_show = problem_specific_rec.get('hands_on_with_equipment_ideas')
+                ideas_to_show_list.append(problem_specific_rec.get('hands_on_with_equipment_ideas'))
             elif expert_method_category == "Hands-on (posture/body)":
-                ideas_to_show = problem_specific_rec.get('hands_on_posture_ideas')
+                ideas_to_show_list.append(problem_specific_rec.get('hands_on_posture_ideas'))
+            elif expert_method_category == "Hands-on techniques":
+                ideas_to_show_list.append(problem_specific_rec.get('hands_on_no_equipment_ideas'))
+                ideas_to_show_list.append(problem_specific_rec.get('hands_on_with_equipment_ideas'))
+                ideas_to_show_list.append(problem_specific_rec.get('hands_on_posture_ideas'))
+            elif expert_method_category == "A combination of both":
+                ideas_to_show_list.append(problem_specific_rec.get('educational_ideas'))
+                ideas_to_show_list.append(problem_specific_rec.get('hands_on_no_equipment_ideas'))
+                ideas_to_show_list.append(problem_specific_rec.get('hands_on_with_equipment_ideas'))
+                ideas_to_show_list.append(problem_specific_rec.get('hands_on_posture_ideas'))
+            
+            all_ideas = []
+            for idea_set in ideas_to_show_list:
+                if pd.notna(idea_set):
+                    all_ideas.extend(str(idea_set).split('|'))
 
-            # ** NEW: AI-POWERED FALLBACK LOGIC **
-            if pd.notna(ideas_to_show) and ideas_to_show.strip() != "":
-                lesson_ideas = str(ideas_to_show).split('|')
-                for idea in lesson_ideas:
+            if all_ideas:
+                for idea in all_ideas:
                     st.info(f"💡 {idea.strip()}")
             else:
-                st.warning("No specific ideas found in our database for this combination. Brainstorming some general ideas for you...", icon="🧠")
-                fallback_prompt = f"""
-                You are an expert curriculum designer. Our database has no specific ideas for an expert who wants to create a '{expert_method_category}' lesson to solve '{data.get('problem')}'.
-
-                Your task is to generate 2-3 general, actionable lesson ideas for a **7-12 minute lesson**.
-                These ideas must combine the expert's problem focus with their chosen method.
-                For each idea, provide a clear title and a 1-2 sentence description.
-                Format the output using Markdown.
-                """
-                fallback_ideas = generate_content(fallback_prompt)
-                if fallback_ideas:
-                    st.markdown(fallback_ideas)
+                st.warning("No specific ideas found in our database for this combination. The AI will brainstorm general ideas for you below.")
 
             if 'client_target_audience' in problem_specific_rec and pd.notna(problem_specific_rec['client_target_audience']):
                 st.info(f"**Ideal Client Target Audience:** {problem_specific_rec['client_target_audience']}", icon="👥")
@@ -260,7 +264,7 @@ if st.session_state.stage == 5:
 
         single_lesson_prompt = f"""
         {base_prompt_info}
-        * **Chosen Lesson Category:** {data.get('category')}
+        * **Chosen Lesson Category:** {data.get('category', 'Not specified')}
         {equipment_info}
 
         **Your Task:**
@@ -273,7 +277,7 @@ if st.session_state.stage == 5:
 
         full_program_prompt = f"""
         {base_prompt_info}
-
+        * **Expert's Chosen Method:** {data.get('method')}
         **Expert's Transformation Method for a Self-Care Program:**
         * **Client's Starting Point (A):** {data.get('point_a')}
         * **Client's Transformation (B):** {data.get('point_b')}

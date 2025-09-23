@@ -32,9 +32,12 @@ def load_data():
 
 def find_problem_recommendation(user_problem_text, recommendations_df):
     """Scans user text for keywords to find the correct client audience."""
-    if not user_problem_text or not isinstance(user_problem_text, str): return None
+    # Use split to check each word in the user's input against the keywords
+    user_words = set(user_problem_text.lower().split())
     for _, row in recommendations_df.iterrows():
-        if row['problem_keyword'].lower() in user_problem_text.lower(): return row
+        search_keywords = set(row['search_keywords'].split(','))
+        if not user_words.isdisjoint(search_keywords):
+            return row
     return None
 
 def generate_content(prompt):
@@ -88,7 +91,7 @@ if st.session_state.stage == 0:
         answer3 = st.radio("How many hours a week can you spare?", q3_options, index=1)
 
         st.header("🎯 Step 2: Your Program Focus", divider="gray")
-        answer4 = st.text_area("Describe the main problem you solve for your clients. (Required)", placeholder="Example: I help clients get rid of persistent acne.")
+        answer4 = st.text_area("Describe the main problem you solve or the result you deliver. (Required)", placeholder="Example: I help clients get rid of persistent acne OR I help clients achieve a natural face lift.")
         answer5 = st.text_input("In one sentence, describe your main expertise. (Required)", placeholder="Example: I specialize in holistic solutions for aging skin.")
 
         submitted = st.form_submit_button("Next Step", use_container_width=True)
@@ -99,7 +102,7 @@ if st.session_state.stage == 0:
                 st.session_state.form_data.update({"role": answer1, "method": answer2, "time": answer3, "problem": answer4, "expertise": answer5})
                 if answer3 == "3-4 hours a week": set_stage(1)
                 elif answer3 == "8-10 hours a week": set_stage(2)
-                else: st.session_state.form_data['goal'] = 'single_lesson'; set_stage(4) # ** NEW: Go to category selection
+                else: st.session_state.form_data['goal'] = 'single_lesson'; set_stage(4)
                 st.rerun()
 
 # STAGE 1: Decision Point for 3-4 Hour Users
@@ -111,7 +114,7 @@ if st.session_state.stage == 1:
     with col1:
         if st.button("Create a Single Lesson", use_container_width=True, type="primary"):
             st.session_state.form_data['goal'] = 'single_lesson'
-            set_stage(4) # ** NEW: Go to category selection
+            set_stage(4)
             st.rerun()
     with col2:
         if st.button("Outline a Full 12-Lesson Program", use_container_width=True):
@@ -139,7 +142,7 @@ if st.session_state.stage == 2:
                 set_stage(3)
                 st.rerun()
 
-# ** NEW STAGE 4: CATEGORY SELECTION FOR SINGLE LESSON **
+# STAGE 4: CATEGORY SELECTION FOR SINGLE LESSON
 if st.session_state.stage == 4:
     st.header("📚 Step 3: Choose a Lesson Category", divider="gray")
     st.info("To give you the best ideas, please select the category for your single lesson.", icon="✨")
@@ -158,7 +161,7 @@ if st.session_state.stage == 4:
             st.error("⚠️ Please select a category to continue.")
         else:
             st.session_state.form_data['category'] = category
-            set_stage(3) # Go to final blueprint
+            set_stage(3)
             st.rerun()
 
 # STAGE 3: Final Blueprint Generation
@@ -180,11 +183,11 @@ if st.session_state.stage == 3:
             
             rec_text = f"**Recommended Content Focus:** A program to help clients {program_goal}"
             if expert_method == "Educational content":
-                rec_text += " This can be an educational program focusing on topics like " + ", ".join(problem_specific_rec['educational_ideas'].split('|')) + "."
+                rec_text += ". This can be an educational program focusing on topics like " + ", ".join(problem_specific_rec['educational_ideas'].split('|')) + "."
             elif expert_method == "Hands-on techniques":
-                rec_text += " This can be a hands-on program teaching techniques like " + ", ".join(problem_specific_rec['hands_on_ideas'].split('|')) + "."
+                rec_text += ". This can be a hands-on program teaching techniques like " + ", ".join(problem_specific_rec['hands_on_ideas'].split('|')) + "."
             else:
-                rec_text += " This can be a combined program with educational topics like " + ", ".join(problem_specific_rec['educational_ideas'].split('|')) + " and hands-on techniques such as " + ", ".join(problem_specific_rec['hands_on_ideas'].split('|')) + "."
+                rec_text += ". This can be a combined program with educational topics like " + ", ".join(problem_specific_rec['educational_ideas'].split('|')) + " and hands-on techniques such as " + ", ".join(problem_specific_rec['hands_on_ideas'].split('|')) + "."
 
             st.info(rec_text, icon="💡")
             
@@ -200,7 +203,6 @@ if st.session_state.stage == 3:
         * Client Problem: "{data.get('problem')}" | Expertise: "{data.get('expertise')}"
         """
         
-        # ** NEW, SMARTER PROMPT FOR A SINGLE LESSON **
         single_lesson_prompt = f"""
         You are an expert curriculum designer. Your task is to brainstorm 4-5 specific, actionable ideas for a SINGLE LESSON based on the expert's profile and chosen category. Your goal is to provide the *substance* of what the lesson could be about.
 
@@ -237,6 +239,15 @@ if st.session_state.stage == 3:
             if creative_content:
                 with st.container(border=True):
                     st.markdown(creative_content)
+            
+            # ** NEW "WHAT'S NEXT" SECTION **
+            st.success("What to Do Next:", icon="✅")
+            st.markdown("""
+            1.  **Choose one idea** from the list above that you're most excited about.
+            2.  **Edit and refine it** until it perfectly matches your vision.
+            3.  **Copy your final idea** and take it to our **Lesson Blueprint Bot** to generate the full structure and script for your video.
+            """)
+            st.link_button("Go to Lesson Blueprint Bot", "YOUR_LINK_TO_THE_SECOND_BOT_HERE")
             
             if data.get('time') == '3-4 hours a week':
                 st.write("---")

@@ -111,7 +111,7 @@ if st.session_state.stage == 0:
                 elif answer3 == "8-10 hours a week": set_stage(2)
                 else: 
                     st.session_state.form_data['goal'] = 'single_lesson'
-                    set_stage(3) 
+                    set_stage(4) 
                 st.rerun()
 
 # STAGE 1: Decision Point for 3-4 Hour Users
@@ -123,7 +123,7 @@ if st.session_state.stage == 1:
     with col1:
         if st.button("Create a Single Lesson", use_container_width=True, type="primary"):
             st.session_state.form_data['goal'] = 'single_lesson'
-            set_stage(3)
+            set_stage(4)
             st.rerun()
     with col2:
         if st.button("Outline a Full 12-Lesson Program", use_container_width=True):
@@ -151,9 +151,8 @@ if st.session_state.stage == 2:
                 set_stage(5) 
                 st.rerun()
 
-# STAGE 3: CATEGORY SELECTION FOR SINGLE LESSON
-# This stage is for users with 1-2 hours, or 3-4 hours who chose "Single Lesson"
-if st.session_state.stage == 3:
+# STAGE 4: CATEGORY SELECTION FOR SINGLE LESSON
+if st.session_state.stage == 4:
     st.header("📚 Step 3: Choose a Lesson Category", divider="gray")
     st.info("To give you the best ideas, please select the category for your single lesson.", icon="✨")
     
@@ -172,17 +171,18 @@ if st.session_state.stage == 3:
         else:
             st.session_state.form_data['category'] = category
             if category == "Hands-on (with equipment)":
-                set_stage(4) # Go to new equipment selection stage
+                set_stage(4.5)
             else:
-                set_stage(5) # Go directly to final blueprint
+                set_stage(5)
             st.rerun()
 
-# STAGE 4: EQUIPMENT SELECTION
-if st.session_state.stage == 4:
+# STAGE 4.5: EQUIPMENT SELECTION
+if st.session_state.stage == 4.5:
     st.header("⚙️ Step 4: Select Your Equipment", divider="gray")
     st.info("Which specific tool will this lesson focus on?", icon="✨")
 
-    equipment_list = ["Guasha", "Facial Cups", "Kansa Wand", "Facial Roller", "Microcurrent Device", "LED Therapy Mask", "Other"]
+    # ** UPDATED EQUIPMENT LIST **
+    equipment_list = ["Guasha", "Facial Cups", "Face Tape", "Facial Roller", "Microcurrent Device", "LED Therapy Mask", "Other"]
     equipment = st.selectbox("Select your primary tool (Required)", equipment_list, index=None, placeholder="Choose your equipment...")
 
     if st.button("Generate My Lesson Blueprint", use_container_width=True, type="primary"):
@@ -190,7 +190,7 @@ if st.session_state.stage == 4:
             st.error("⚠️ Please select your equipment to continue.")
         else:
             st.session_state.form_data['equipment'] = equipment
-            set_stage(5) # Go to final blueprint
+            set_stage(5)
             st.rerun()
 
 
@@ -207,25 +207,28 @@ if st.session_state.stage == 5:
             st.success(time_based_rec['recommendation_text'].iloc[0], icon="🕒")
 
         if problem_specific_rec is not None:
-            expert_method = data.get('category', data.get('method'))
+            # ** NEW, SMARTER RECOMMENDATION LOGIC **
+            expert_method_category = data.get('category', data.get('method'))
             
-            st.markdown("**Recommended Content Ideas:**")
+            st.markdown(f"**Recommended ideas for your *{expert_method_category}* lesson:**")
             
             ideas_to_show = ""
-            if expert_method == "Educational content":
+            if expert_method_category == "Educational content":
                 ideas_to_show = problem_specific_rec.get('educational_ideas')
-            elif expert_method == "Hands-on (no equipment)":
+            elif expert_method_category == "Hands-on (no equipment)":
                 ideas_to_show = problem_specific_rec.get('hands_on_no_equipment_ideas')
-            elif expert_method == "Hands-on (with equipment)":
+            elif expert_method_category == "Hands-on (with equipment)":
                 ideas_to_show = problem_specific_rec.get('hands_on_with_equipment_ideas')
-            elif expert_method == "Hands-on (posture/body)":
+            elif expert_method_category == "Hands-on (posture/body)":
                 ideas_to_show = problem_specific_rec.get('hands_on_posture_ideas')
 
             if pd.notna(ideas_to_show):
                 lesson_ideas = str(ideas_to_show).split('|')
                 for idea in lesson_ideas:
                     st.info(f"💡 {idea.strip()}")
-            
+            else:
+                st.warning("No specific ideas found in the database for this combination. The AI will brainstorm general ideas for you below.")
+
             if 'client_target_audience' in problem_specific_rec and pd.notna(problem_specific_rec['client_target_audience']):
                 st.info(f"**Ideal Client Target Audience:** {problem_specific_rec['client_target_audience']}", icon="👥")
 

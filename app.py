@@ -156,12 +156,8 @@ if st.session_state.stage == 4:
     st.header("📚 Step 3: Choose a Lesson Category", divider="gray")
     st.info("To give you the best ideas, please select the category for your single lesson.", icon="✨")
     
-    lesson_categories = [
-        "Hands-on (no equipment)",
-        "Hands-on (with equipment)",
-        "Hands-on (posture/body)",
-        "Educational content"
-    ]
+    # The categories now exactly match the expert's method choices
+    lesson_categories = ["Educational content", "Hands-on (no equipment)", "Hands-on (with equipment)", "Hands-on (posture/body)"]
     
     category = st.selectbox("Select your lesson category (Required)", lesson_categories, index=None, placeholder="Choose a category...")
     
@@ -231,7 +227,6 @@ if st.session_state.stage == 5:
     st.header("✨ Your AI-Generated Creative Content", divider="gray")
     with st.spinner("Our creative AI is brainstorming for you... This may take a moment."):
         
-        # ** NEW, MORE CONTEXTUAL BASE PROMPT **
         base_prompt_info = f"""
         You are an expert curriculum designer creating content for a high-end skincare app. The expert is crafting a lesson for their clients to perform on themselves at home. All ideas must be framed as self-care routines.
 

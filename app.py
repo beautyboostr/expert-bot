@@ -109,7 +109,9 @@ if st.session_state.stage == 0:
                 st.session_state.form_data.update({"role": answer1, "method": answer2, "time": answer3, "problem": answer4, "expertise": answer5})
                 if answer3 == "3-4 hours a week": set_stage(1)
                 elif answer3 == "8-10 hours a week": set_stage(2)
-                else: st.session_state.form_data['goal'] = 'single_lesson'; set_stage(3)
+                else: 
+                    st.session_state.form_data['goal'] = 'single_lesson'
+                    set_stage(4) # ** FIX: Go to category selection **
                 st.rerun()
 
 # STAGE 1: Decision Point for 3-4 Hour Users
@@ -121,7 +123,7 @@ if st.session_state.stage == 1:
     with col1:
         if st.button("Create a Single Lesson", use_container_width=True, type="primary"):
             st.session_state.form_data['goal'] = 'single_lesson'
-            set_stage(3)
+            set_stage(4) # ** FIX: Go to category selection **
             st.rerun()
     with col2:
         if st.button("Outline a Full 12-Lesson Program", use_container_width=True):
@@ -149,6 +151,29 @@ if st.session_state.stage == 2:
                 set_stage(3)
                 st.rerun()
 
+# ** NEW STAGE 4: CATEGORY SELECTION FOR SINGLE LESSON **
+if st.session_state.stage == 4:
+    st.header("📚 Step 3: Choose a Lesson Category", divider="gray")
+    st.info("To give you the best ideas, please select the category for your single lesson.", icon="✨")
+    
+    lesson_categories = [
+        "Hands-on (no equipment)",
+        "Hands-on (with equipment)",
+        "Hands-on (posture/body)",
+        "Educational content"
+    ]
+    
+    category = st.selectbox("Select your lesson category (Required)", lesson_categories, index=None, placeholder="Choose a category...")
+    
+    if st.button("Generate My Lesson Blueprint", use_container_width=True, type="primary"):
+        if not category:
+            st.error("⚠️ Please select a category to continue.")
+        else:
+            st.session_state.form_data['category'] = category
+            set_stage(3) # Go to final blueprint
+            st.rerun()
+
+
 # STAGE 3: Final Blueprint Generation
 if st.session_state.stage == 3:
     st.header("🚀 Your Program Blueprint", divider="gray")
@@ -162,8 +187,7 @@ if st.session_state.stage == 3:
             st.success(time_based_rec['recommendation_text'].iloc[0], icon="🕒")
 
         if problem_specific_rec is not None:
-            # DYNAMIC RECOMMENDATION LOGIC
-            expert_method = data.get('method')
+            expert_method = data.get('category', data.get('method')) # Use new category if available
             
             st.markdown("**Recommended Content Ideas:**")
             
@@ -190,23 +214,28 @@ if st.session_state.stage == 3:
         
         base_prompt_info = f"""
         **Expert's Information:**
-        * Role: {data.get('role')} | Method: {data.get('method')}
+        * Role: {data.get('role')}
         * Client Problem: "{data.get('problem')}" | Expertise: "{data.get('expertise')}"
         """
         
         single_lesson_prompt = f"""
-        You are an expert curriculum designer. Your task is to brainstorm 4-5 specific, actionable ideas for a SINGLE LESSON based on the expert's profile and chosen method. Your goal is to provide the *substance* of what the lesson could be about.
+        You are an expert curriculum designer. Your task is to brainstorm 4-5 specific, actionable ideas for a SINGLE LESSON based on the expert's profile and chosen category. Your goal is to provide the *substance* of what the lesson could be about.
+
         {base_prompt_info}
+        * **Chosen Lesson Category:** {data.get('category')}
+
         **Your Task:**
         Generate 4-5 concrete lesson ideas. For each idea, provide:
         1. A clear, descriptive **Title**.
-        2. A **Concept** (1-2 sentences explaining what the student will learn and do, tailored to the expert's chosen method).
+        2. A **Concept** (1-2 sentences explaining what the student will learn and do, tailored to the chosen category).
+        
         Format the output using Markdown with a clear heading for each idea.
         """
 
         full_program_prompt = f"""
         You are an expert instructional designer. Your task is to create a detailed outline for a FULL 12-LESSON MONTHLY PROGRAM based on the expert's transformation method.
         {base_prompt_info}
+        * **Expert's Chosen Method:** {data.get('method')}
         **Expert's Transformation Method:**
         * **Starting Point (A):** {data.get('point_a')}
         * **Ending Result (B):** {data.get('point_b')}

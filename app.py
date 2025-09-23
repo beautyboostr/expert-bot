@@ -31,14 +31,22 @@ def load_data():
         return None, None
 
 def find_problem_recommendation(user_problem_text, recommendations_df):
-    """Scans user text for keywords to find the correct client audience."""
-    # Use split to check each word in the user's input against the keywords
-    user_words = set(user_problem_text.lower().split())
-    for _, row in recommendations_df.iterrows():
-        search_keywords = set(row['search_keywords'].split(','))
-        if not user_words.isdisjoint(search_keywords):
-            return row
-    return None
+    """Scans user text against keywords to find the best recommendation row."""
+    if not user_problem_text or not isinstance(user_problem_text, str): return None
+    user_words = set(user_problem_text.lower().replace(",", " ").split())
+    
+    # Create a score for each row based on keyword matches
+    best_match_score = 0
+    best_match_row = None
+
+    for index, row in recommendations_df.iterrows():
+        search_keywords = set(str(row['search_keywords']).split(','))
+        matches = user_words.intersection(search_keywords)
+        if len(matches) > best_match_score:
+            best_match_score = len(matches)
+            best_match_row = row
+            
+    return best_match_row
 
 def generate_content(prompt):
     """A single function to send any prompt to the Gemini API."""
@@ -186,7 +194,7 @@ if st.session_state.stage == 3:
                 rec_text += ". This can be an educational program focusing on topics like " + ", ".join(problem_specific_rec['educational_ideas'].split('|')) + "."
             elif expert_method == "Hands-on techniques":
                 rec_text += ". This can be a hands-on program teaching techniques like " + ", ".join(problem_specific_rec['hands_on_ideas'].split('|')) + "."
-            else:
+            else: # Combination
                 rec_text += ". This can be a combined program with educational topics like " + ", ".join(problem_specific_rec['educational_ideas'].split('|')) + " and hands-on techniques such as " + ", ".join(problem_specific_rec['hands_on_ideas'].split('|')) + "."
 
             st.info(rec_text, icon="💡")
@@ -240,7 +248,6 @@ if st.session_state.stage == 3:
                 with st.container(border=True):
                     st.markdown(creative_content)
             
-            # ** NEW "WHAT'S NEXT" SECTION **
             st.success("What to Do Next:", icon="✅")
             st.markdown("""
             1.  **Choose one idea** from the list above that you're most excited about.

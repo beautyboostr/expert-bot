@@ -35,7 +35,6 @@ def find_problem_recommendation(user_problem_text, recommendations_df):
     if not user_problem_text or not isinstance(user_problem_text, str): return None
     user_words = set(user_problem_text.lower().replace(",", " ").split())
     
-    # Create a score for each row based on keyword matches
     best_match_score = 0
     best_match_row = None
 
@@ -91,7 +90,7 @@ if st.session_state.stage == 0:
     with st.form("expert_form_1"):
         st.header("👤 Step 1: Your Profile", divider="gray")
         q1_options = ["Dermatologist", "Facialist", "Esthetician", "Skincare Coach", "Skincare Influencer", "Other"]
-        q2_options = ["Educational content", "Hands-on techniques", "A combination of both"]
+        q2_options = ["Educational content", "Hands-on (no equipment)", "Hands-on (with equipment)", "Hands-on (posture/body)"]
         q3_options = ["1-2 hours", "3-4 hours a week", "8-10 hours a week"]
 
         answer1 = st.selectbox("Which of the following best describes your professional role? (Required)", q1_options, index=None, placeholder="Select your role...")
@@ -110,7 +109,7 @@ if st.session_state.stage == 0:
                 st.session_state.form_data.update({"role": answer1, "method": answer2, "time": answer3, "problem": answer4, "expertise": answer5})
                 if answer3 == "3-4 hours a week": set_stage(1)
                 elif answer3 == "8-10 hours a week": set_stage(2)
-                else: st.session_state.form_data['goal'] = 'single_lesson'; set_stage(4)
+                else: st.session_state.form_data['goal'] = 'single_lesson'; set_stage(3)
                 st.rerun()
 
 # STAGE 1: Decision Point for 3-4 Hour Users
@@ -122,7 +121,7 @@ if st.session_state.stage == 1:
     with col1:
         if st.button("Create a Single Lesson", use_container_width=True, type="primary"):
             st.session_state.form_data['goal'] = 'single_lesson'
-            set_stage(4)
+            set_stage(3)
             st.rerun()
     with col2:
         if st.button("Outline a Full 12-Lesson Program", use_container_width=True):
@@ -150,28 +149,6 @@ if st.session_state.stage == 2:
                 set_stage(3)
                 st.rerun()
 
-# STAGE 4: CATEGORY SELECTION FOR SINGLE LESSON
-if st.session_state.stage == 4:
-    st.header("📚 Step 3: Choose a Lesson Category", divider="gray")
-    st.info("To give you the best ideas, please select the category for your single lesson.", icon="✨")
-    
-    lesson_categories = [
-        "Hands-on lesson with no equipment",
-        "Hands-on with equipment (e.g., guasha, jars)",
-        "Hands-on for posture or body exercises",
-        "Educational content (Skin 101)"
-    ]
-    
-    category = st.selectbox("Select your lesson category (Required)", lesson_categories, index=None, placeholder="Choose a category...")
-    
-    if st.button("Generate My Lesson Blueprint", use_container_width=True, type="primary"):
-        if not category:
-            st.error("⚠️ Please select a category to continue.")
-        else:
-            st.session_state.form_data['category'] = category
-            set_stage(3)
-            st.rerun()
-
 # STAGE 3: Final Blueprint Generation
 if st.session_state.stage == 3:
     st.header("🚀 Your Program Blueprint", divider="gray")
@@ -186,18 +163,24 @@ if st.session_state.stage == 3:
 
         if problem_specific_rec is not None:
             # DYNAMIC RECOMMENDATION LOGIC
-            program_goal = problem_specific_rec['program_goal']
             expert_method = data.get('method')
             
-            rec_text = f"**Recommended Content Focus:** A program to help clients {program_goal}"
+            st.markdown("**Recommended Content Ideas:**")
+            
+            ideas_to_show = ""
             if expert_method == "Educational content":
-                rec_text += ". This can be an educational program focusing on topics like " + ", ".join(problem_specific_rec['educational_ideas'].split('|')) + "."
-            elif expert_method == "Hands-on techniques":
-                rec_text += ". This can be a hands-on program teaching techniques like " + ", ".join(problem_specific_rec['hands_on_ideas'].split('|')) + "."
-            else: # Combination
-                rec_text += ". This can be a combined program with educational topics like " + ", ".join(problem_specific_rec['educational_ideas'].split('|')) + " and hands-on techniques such as " + ", ".join(problem_specific_rec['hands_on_ideas'].split('|')) + "."
+                ideas_to_show = problem_specific_rec.get('educational_ideas')
+            elif expert_method == "Hands-on (no equipment)":
+                ideas_to_show = problem_specific_rec.get('hands_on_no_equipment_ideas')
+            elif expert_method == "Hands-on (with equipment)":
+                ideas_to_show = problem_specific_rec.get('hands_on_with_equipment_ideas')
+            elif expert_method == "Hands-on (posture/body)":
+                ideas_to_show = problem_specific_rec.get('hands_on_posture_ideas')
 
-            st.info(rec_text, icon="💡")
+            if pd.notna(ideas_to_show):
+                lesson_ideas = str(ideas_to_show).split('|')
+                for idea in lesson_ideas:
+                    st.info(f"💡 {idea.strip()}")
             
             if 'client_target_audience' in problem_specific_rec and pd.notna(problem_specific_rec['client_target_audience']):
                 st.info(f"**Ideal Client Target Audience:** {problem_specific_rec['client_target_audience']}", icon="👥")
@@ -212,16 +195,12 @@ if st.session_state.stage == 3:
         """
         
         single_lesson_prompt = f"""
-        You are an expert curriculum designer. Your task is to brainstorm 4-5 specific, actionable ideas for a SINGLE LESSON based on the expert's profile and chosen category. Your goal is to provide the *substance* of what the lesson could be about.
-
+        You are an expert curriculum designer. Your task is to brainstorm 4-5 specific, actionable ideas for a SINGLE LESSON based on the expert's profile and chosen method. Your goal is to provide the *substance* of what the lesson could be about.
         {base_prompt_info}
-        * **Chosen Lesson Category:** {data.get('category')}
-
         **Your Task:**
         Generate 4-5 concrete lesson ideas. For each idea, provide:
         1. A clear, descriptive **Title**.
-        2. A **Concept** (1-2 sentences explaining what the student will learn and do, tailored to the chosen category).
-        
+        2. A **Concept** (1-2 sentences explaining what the student will learn and do, tailored to the expert's chosen method).
         Format the output using Markdown with a clear heading for each idea.
         """
 

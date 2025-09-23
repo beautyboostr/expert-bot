@@ -148,7 +148,7 @@ if st.session_state.stage == 2:
                 st.session_state.form_data.update({"point_a": point_a, "point_b": point_b, "method_desc": method_desc})
                 if st.session_state.form_data.get('time') == '3-4 hours a week': st.session_state.form_data['goal'] = 'combo'
                 else: st.session_state.form_data['goal'] = 'full_program'
-                set_stage(5) # ** RENAMED FINAL STAGE **
+                set_stage(5) 
                 st.rerun()
 
 # STAGE 4: CATEGORY SELECTION FOR SINGLE LESSON
@@ -170,14 +170,13 @@ if st.session_state.stage == 4:
             st.error("⚠️ Please select a category to continue.")
         else:
             st.session_state.form_data['category'] = category
-            # ** NEW CONDITIONAL LOGIC **
             if category == "Hands-on (with equipment)":
-                set_stage(4.5) # Go to new equipment selection stage
+                set_stage(4.5)
             else:
-                set_stage(5) # Go directly to final blueprint
+                set_stage(5)
             st.rerun()
 
-# ** NEW STAGE 4.5: EQUIPMENT SELECTION **
+# STAGE 4.5: EQUIPMENT SELECTION
 if st.session_state.stage == 4.5:
     st.header("⚙️ Step 4: Select Your Equipment", divider="gray")
     st.info("Which specific tool will this lesson focus on?", icon="✨")
@@ -190,7 +189,7 @@ if st.session_state.stage == 4.5:
             st.error("⚠️ Please select your equipment to continue.")
         else:
             st.session_state.form_data['equipment'] = equipment
-            set_stage(5) # Go to final blueprint
+            set_stage(5)
             st.rerun()
 
 
@@ -232,51 +231,53 @@ if st.session_state.stage == 5:
     st.header("✨ Your AI-Generated Creative Content", divider="gray")
     with st.spinner("Our creative AI is brainstorming for you... This may take a moment."):
         
+        # ** NEW, MORE CONTEXTUAL BASE PROMPT **
         base_prompt_info = f"""
+        You are an expert curriculum designer creating content for a high-end skincare app. The expert is crafting a lesson for their clients to perform on themselves at home. All ideas must be framed as self-care routines.
+
         **Expert's Information:**
         * Role: {data.get('role')}
-        * Client Problem: "{data.get('problem')}" | Expertise: "{data.get('expertise')}"
+        * Client Problem/Goal: "{data.get('problem')}"
+        * Expertise: "{data.get('expertise')}"
         """
         
-        # ** NEW, SMARTER PROMPT FOR A SINGLE LESSON **
         equipment_info = ""
         if data.get('equipment'):
             equipment_info = f"* **Specific Equipment:** {data.get('equipment')}"
 
         single_lesson_prompt = f"""
-        You are an expert curriculum designer. Your task is to brainstorm 4-5 specific, actionable ideas for a SINGLE LESSON based on the expert's profile and chosen category. Your goal is to provide the *substance* of what the lesson could be about.
-
         {base_prompt_info}
         * **Chosen Lesson Category:** {data.get('category')}
         {equipment_info}
 
         **Your Task:**
-        Generate 4-5 concrete lesson ideas. For each idea, provide:
-        1. A clear, descriptive **Title**.
-        2. A **Concept** (1-2 sentences explaining what the student will learn and do, tailored to the chosen category and specific equipment if provided).
+        Generate 4-5 concrete lesson ideas for a **self-care lesson**. For each idea, provide:
+        1. An empowering **Self-Care Title**.
+        2. A **Self-Care Concept** (1-2 sentences explaining the routine the client will learn and the benefit they will feel).
         
         Format the output using Markdown with a clear heading for each idea.
         """
 
         full_program_prompt = f"""
-        You are an expert instructional designer. Your task is to create a detailed outline for a FULL 12-LESSON MONTHLY PROGRAM based on the expert's transformation method.
         {base_prompt_info}
-        * **Expert's Chosen Method:** {data.get('method')}
-        **Expert's Transformation Method:**
-        * **Starting Point (A):** {data.get('point_a')}
-        * **Ending Result (B):** {data.get('point_b')}
-        * **Method Description:** {data.get('method_desc')}
-        * **IMPORTANT Program Structure:** The 12 lessons are delivered over ONE MONTH (3 lessons per week). All of your generated text must reflect this monthly timeline.
+
+        **Expert's Transformation Method for a Self-Care Program:**
+        * **Client's Starting Point (A):** {data.get('point_a')}
+        * **Client's Transformation (B):** {data.get('point_b')}
+        * **Expert's Method:** {data.get('method_desc')}
+        * **Program Structure:** 12 lessons delivered over ONE MONTH (3 lessons per week).
+
         **Your Tasks:**
-        1.  **Write a Full Program Description:** Write an engaging description (3-4 sentences) for the one-month program.
-        2.  **Generate Title and Tagline Ideas:** Generate 4 creative titles for the full program, each with a tagline.
-        3.  **Create a 4-Week Lesson Outline:** Based on the expert's A->B method, create a logical, 4-week lesson plan. Each week should contain 3 lesson titles. For each lesson, provide a one-sentence description of what the client will learn.
+        1.  **Write a Full Program Description:** Write an engaging, client-focused description (3-4 sentences) for the one-month self-care journey.
+        2.  **Generate Empowering Title and Tagline Ideas:** Generate 4 creative titles for the program, each with a tagline that speaks to the client's transformation.
+        3.  **Create a 4-Week Self-Care Lesson Outline:** Create a logical, 4-week lesson plan. Frame each of the 12 lesson titles as a skill or routine the client will learn for themselves.
+        
         Format the entire output using Markdown with clear headings.
         """
 
         if data.get('goal') == 'single_lesson':
             st.markdown("### Brainstorming Your Single Lesson")
-            st.info("Here are some AI-generated ideas to help you brainstorm the content of your lesson.", icon="🧠")
+            st.info("Here are some AI-generated ideas for your self-care lesson.", icon="🧠")
             creative_content = generate_content(single_lesson_prompt)
             if creative_content:
                 with st.container(border=True):
@@ -306,14 +307,14 @@ if st.session_state.stage == 5:
 
         elif data.get('goal') == 'combo':
             st.markdown("### Part 1: Brainstorming Your Single Lesson")
-            st.info("Here are AI-generated ideas for the single lesson you can create now.", icon="⚡")
+            st.info("Here are AI-generated ideas for the single self-care lesson you can create now.", icon="⚡")
             single_lesson_content = generate_content(single_lesson_prompt)
             if single_lesson_content:
                 with st.container(border=True):
                     st.markdown(single_lesson_content)
             
             st.markdown("### Part 2: Your Full Program Outline")
-            st.info("And here is the detailed outline for the full program you can build next.", icon="🗺️")
+            st.info("And here is the detailed outline for the full self-care program you can build next.", icon="🗺️")
             full_program_content = generate_content(full_program_prompt)
             if full_program_content:
                 with st.container(border=True):

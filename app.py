@@ -198,6 +198,9 @@ if st.session_state.stage == 5:
     st.header("🚀 Your Program Blueprint", divider="gray")
     data = st.session_state.form_data
     problem_specific_rec = find_problem_recommendation(data.get('problem', ''), problem_rec_df)
+    
+    # Store recommended ideas for later use by the AI
+    recommended_ideas_str = ""
 
     with st.container(border=True):
         st.subheader("Key Recommendations:")
@@ -206,33 +209,27 @@ if st.session_state.stage == 5:
             st.success(time_based_rec['recommendation_text'].iloc[0], icon="🕒")
 
         if problem_specific_rec is not None:
-            # ** CORRECTED LOGIC FOR DISPLAYING RECOMMENDATIONS **
-            goal = data.get('goal')
+            expert_method_category = data.get('category', data.get('method'))
             
-            if goal == 'single_lesson':
-                expert_method_category = data.get('category')
-                st.markdown(f"**Recommended ideas for your *{expert_method_category}* lesson (7-12 mins):**")
-                
-                ideas_to_show = ""
-                if expert_method_category == "Educational content":
-                    ideas_to_show = problem_specific_rec.get('educational_ideas')
-                elif expert_method_category == "Hands-on (no equipment)":
-                    ideas_to_show = problem_specific_rec.get('hands_on_no_equipment_ideas')
-                elif expert_method_category == "Hands-on (with equipment)":
-                    ideas_to_show = problem_specific_rec.get('hands_on_with_equipment_ideas')
-                elif expert_method_category == "Hands-on (posture/body)":
-                    ideas_to_show = problem_specific_rec.get('hands_on_posture_ideas')
+            st.markdown(f"**Recommended ideas for your *{expert_method_category}* lesson (7-12 mins):**")
+            
+            ideas_to_show = ""
+            if expert_method_category == "Educational content":
+                ideas_to_show = problem_specific_rec.get('educational_ideas')
+            elif expert_method_category == "Hands-on (no equipment)":
+                ideas_to_show = problem_specific_rec.get('hands_on_no_equipment_ideas')
+            elif expert_method_category == "Hands-on (with equipment)":
+                ideas_to_show = problem_specific_rec.get('hands_on_with_equipment_ideas')
+            elif expert_method_category == "Hands-on (posture/body)":
+                ideas_to_show = problem_specific_rec.get('hands_on_posture_ideas')
 
-                if pd.notna(ideas_to_show) and ideas_to_show.strip() != "":
-                    lesson_ideas = str(ideas_to_show).split('|')
-                    for idea in lesson_ideas:
-                        st.info(f"💡 {idea.strip()}")
-                else:
-                    st.warning("No specific ideas found in our database for this combination. The AI will brainstorm general ideas for you below.")
-            
-            elif goal in ['full_program', 'combo']:
-                rec_text = f"**Recommended Content Focus:** A program to help clients {problem_specific_rec['program_goal']}"
-                st.info(rec_text, icon="💡")
+            if pd.notna(ideas_to_show) and ideas_to_show.strip() != "":
+                lesson_ideas = str(ideas_to_show).split('|')
+                recommended_ideas_str = "\n".join([f"- {idea.strip()}" for idea in lesson_ideas])
+                for idea in lesson_ideas:
+                    st.info(f"💡 {idea.strip()}")
+            else:
+                st.warning("No specific ideas found in our database for this combination. The AI will brainstorm general ideas for you below.")
 
             if 'client_target_audience' in problem_specific_rec and pd.notna(problem_specific_rec['client_target_audience']):
                 st.info(f"**Ideal Client Target Audience:** {problem_specific_rec['client_target_audience']}", icon="👥")
@@ -253,17 +250,21 @@ if st.session_state.stage == 5:
         if data.get('equipment'):
             equipment_info = f"* **Specific Equipment:** {data.get('equipment')}"
 
+        # ** NEW, INTEGRATED SINGLE LESSON PROMPT **
         single_lesson_prompt = f"""
         {base_prompt_info}
-        * **Chosen Lesson Category:** {data.get('category', 'Not specified')}
+        * **Chosen Lesson Category:** {data.get('category')}
         {equipment_info}
 
+        **Recommended Starting Ideas:**
+        {recommended_ideas_str}
+
         **Your Task:**
-        Generate 4-5 concrete lesson ideas for a **self-care lesson**. For each idea, provide:
+        Act as a creative partner. Take the "Recommended Starting Ideas" and expand upon them. For each idea, generate:
         1. An empowering **Self-Care Title**.
         2. A **Self-Care Concept** (1-2 sentences explaining the routine the client will learn and the benefit they will feel).
         
-        Format the output using Markdown with a clear heading for each idea.
+        Ensure your output is aligned with the starting ideas. Format the output using Markdown with a clear heading for each developed idea.
         """
 
         full_program_prompt = f"""
@@ -285,7 +286,7 @@ if st.session_state.stage == 5:
 
         if data.get('goal') == 'single_lesson':
             st.markdown("### Brainstorming Your Single Lesson")
-            st.info("Here are some AI-generated ideas for your self-care lesson.", icon="🧠")
+            st.info("Here are AI-generated concepts to develop the recommended ideas into a full lesson.", icon="🧠")
             creative_content = generate_content(single_lesson_prompt)
             if creative_content:
                 with st.container(border=True):
@@ -315,7 +316,7 @@ if st.session_state.stage == 5:
 
         elif data.get('goal') == 'combo':
             st.markdown("### Part 1: Brainstorming Your Single Lesson")
-            st.info("Here are AI-generated ideas for the single self-care lesson you can create now.", icon="⚡")
+            st.info("Here are AI-generated concepts to develop the recommended ideas into a full lesson.", icon="⚡")
             single_lesson_content = generate_content(single_lesson_prompt)
             if single_lesson_content:
                 with st.container(border=True):
